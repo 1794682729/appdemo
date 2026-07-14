@@ -19,7 +19,7 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
       return c.json({ error: "未登录" }, 401);
     }
 
-    const row = db
+    const row = await db
       .select({
         userId: sessions.userId,
         username: users.username,

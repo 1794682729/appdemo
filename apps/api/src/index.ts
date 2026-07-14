@@ -11,7 +11,7 @@ import { statsRoute } from "./routes/stats.js";
 import { budgetsRoute } from "./routes/budgets.js";
 import { exportImportRoute } from "./routes/exportImport.js";
 
-migrate();
+await migrate();
 
 const app = new Hono().basePath("/api");
 
@@ -22,11 +22,9 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      // In production, ALLOWED_ORIGIN should be the actual domain (e.g. "https://liushui.example.com")
-      // In dev, the vite proxy sends no origin so we fall back to localhost
       if (!origin) return ALLOWED_ORIGIN;
       if (origin === ALLOWED_ORIGIN) return origin;
-      return null; // reject
+      return null;
     },
     credentials: true,
   }),
@@ -51,12 +49,8 @@ app.onError((err, c) => {
 });
 
 const port = Number(process.env.PORT || 3001);
-
 console.log(`liushui api listening on http://localhost:${port}`);
 
-serve({
-  fetch: app.fetch,
-  port,
-});
+serve({ fetch: app.fetch, port });
 
 export default app;

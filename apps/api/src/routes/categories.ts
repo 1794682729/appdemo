@@ -20,97 +20,48 @@ const SEED_CATEGORIES = [
   { name: "其他支出", type: "expense" as const, icon: "💸", sort: 99 },
 ];
 
-function seedIfEmpty() {
-  const [row] = db
-    .select({ count: count() })
-    .from(categories)
-    .all();
-  if ((row.count as number) > 0) return;
-
+async function seedIfEmpty() {
+  const rows = await db.select({ count: count() }).from(categories).all();
+  if ((rows[0].count as number) > 0) return;
   const now = nowIso();
   for (const c of SEED_CATEGORIES) {
-    db.insert(categories).values({
-      id: newId("cat"),
-      name: c.name,
-      type: c.type,
-      icon: c.icon,
-      sort: c.sort,
-      createdAt: now,
-    }).run();
+    await db.insert(categories).values({ id: newId("cat"), name: c.name, type: c.type, icon: c.icon, sort: c.sort, createdAt: now }).run();
   }
 }
 
 export const categoriesRoute = new Hono<{ Variables: AuthVariables }>()
   .use("*", requireAuth)
-  .get("/categories", (c) => {
-    seedIfEmpty();
-    const rows = db
-      .select()
-      .from(categories)
-      .all();
+  .get("/categories", async (c) => {
+    await seedIfEmpty();
+    const rows = await db.select().from(categories).all();
     return c.json(rows);
   })
   .post("/categories", async (c) => {
     const body = await c.req.json();
     const parsed = categoryCreateSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json({ error: parsed.error.issues[0].message }, 400);
-    }
-
-    const row = {
-      id: newId("cat"),
-      name: parsed.data.name,
-      type: parsed.data.type,
-      icon: parsed.data.icon,
-      sort: parsed.data.sort ?? 0,
-      createdAt: nowIso(),
-    };
-
-    db.insert(categories).values(row).run();
+    if (!parsed.success) return c.json({ error: parsed.error.issues[0].message }, 400);
+    const row = { id: newId("cat"), name: parsed.data.name, type: parsed.data.type, icon: parsed.data.icon, sort: parsed.data.sort ?? 0, createdAt: nowIso() };
+    await db.insert(categories).values(row).run();
     return c.json(row, 201);
   })
   .patch("/categories/:id", async (c) => {
     const id = c.req.param("id");
     const body = await c.req.json();
     const parsed = categoryUpdateSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json({ error: parsed.error.issues[0].message }, 400);
-    }
-
-    const existing = db
-      .select()
-      .from(categories)
-      .where(eq(categories.id, id))
-      .get();
-    if (!existing) {
-      return c.json({ error: "分类不存在" }, 404);
-    }
-
+    if (!parsed.success) return c.json({ error: parsed.error.issues[0].message }, 400);
+    const existing = await db.select().from(categories).where(eq(categories.id, id)).get();
+    if (!existing) return c.json({ error: "分类不存在" }, 404);
     const updates = { ...parsed.data };
-    db.update(categories).set(updates).where(eq(categories.id, id)).run();
-
+    await db.update(categories).set(updates).where(eq(categories.id, id)).run();
     return c.json({ ...existing, ...updates });
   })
-  .delete("/categories/:id", (c) => {
+  .delete("/categories/:id", async (c) => {
     const id = c.req.param("id");
-    const existing = db
-      .select()
-      .from(categories)
-      .where(eq(categories.id, id))
-      .get();
-    if (!existing) {
-      return c.json({ error: "分类不存在" }, 404);
-    }
-
-    // Reassign transactions using this category
-    tx(() => {
-      db.update(transactions)
-        .set({ categoryId: "" })
-        .where(eq(transactions.categoryId, id))
-        .run();
-
-      db.delete(categories).where(eq(categories.id, id)).run();
+    const existing = await db.select().from(categories).where(eq(categories.id, id)).get();
+    if (!existing) return c.json({ error: "分类不存在" }, 404);
+    await tx(async () => {
+      await db.update(transactions).set({ categoryId: "" }).where(eq(transactions.categoryId, id)).run();
+      await db.delete(categories).where(eq(categories.id, id)).run();
     });
-
     return c.json({ ok: true });
   });

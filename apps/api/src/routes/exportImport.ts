@@ -6,93 +6,45 @@ import { nowIso } from "../lib/time.js";
 
 export const exportImportRoute = new Hono<{ Variables: AuthVariables }>()
   .use("*", requireAuth)
-  .get("/export", (c) => {
+  .get("/export", async (c) => {
     const data = {
-      exportedAt: nowIso(),
-      version: 1,
-      categories: db.select().from(categories).all(),
-      transactions: db.select().from(transactions).all(),
-      budgets: db.select().from(budgets).all(),
-      meta: db.select().from(meta).all(),
+      exportedAt: nowIso(), version: 1,
+      categories: await db.select().from(categories).all(),
+      transactions: await db.select().from(transactions).all(),
+      budgets: await db.select().from(budgets).all(),
+      meta: await db.select().from(meta).all(),
     };
-
     return c.json(data);
   })
   .post("/import", async (c) => {
     const body = await c.req.json();
-
     if (!body.categories || !body.transactions) {
-      return c.json({ error: "导入数据格式不正确，需包含 categories 和 transactions" }, 400);
+      return c.json({ error: "导入数据格式不正确" }, 400);
     }
-
-    const overwrite =
-      c.req.query("overwrite") !== "false"; // default true
-
+    const overwrite = c.req.query("overwrite") !== "false";
     try {
-      tx(() => {
+      await tx(async () => {
         if (overwrite) {
-          db.delete(transactions).run();
-          db.delete(categories).run();
-          db.delete(budgets).run();
-          db.delete(meta).run();
+          await db.delete(transactions).run();
+          await db.delete(categories).run();
+          await db.delete(budgets).run();
+          await db.delete(meta).run();
         }
-
         for (const cat of body.categories ?? []) {
-          db.insert(categories)
-            .values({
-              id: cat.id,
-              name: cat.name,
-              type: cat.type,
-              icon: cat.icon ?? "📦",
-              sort: cat.sort ?? 0,
-              createdAt: cat.createdAt ?? nowIso(),
-            })
-            .onConflictDoNothing()
-            .run();
+          await db.insert(categories).values({ id: cat.id, name: cat.name, type: cat.type, icon: cat.icon ?? "📦", sort: cat.sort ?? 0, createdAt: cat.createdAt ?? nowIso() }).onConflictDoNothing().run();
         }
-
         for (const tx of body.transactions ?? []) {
-          db.insert(transactions)
-            .values({
-              id: tx.id,
-              type: tx.type,
-              amountCents: tx.amountCents,
-              categoryId: tx.categoryId,
-              date: tx.date,
-              note: tx.note ?? "",
-              createdAt: tx.createdAt ?? nowIso(),
-              updatedAt: tx.updatedAt ?? nowIso(),
-            })
-            .onConflictDoNothing()
-            .run();
+          await db.insert(transactions).values({ id: tx.id, type: tx.type, amountCents: tx.amountCents, categoryId: tx.categoryId, date: tx.date, note: tx.note ?? "", createdAt: tx.createdAt ?? nowIso(), updatedAt: tx.updatedAt ?? nowIso() }).onConflictDoNothing().run();
         }
-
         for (const b of body.budgets ?? []) {
-          db.insert(budgets)
-            .values({
-              id: b.id,
-              yearMonth: b.yearMonth,
-              totalCents: b.totalCents,
-              byCategory: b.byCategory ?? "{}",
-              updatedAt: b.updatedAt ?? nowIso(),
-            })
-            .onConflictDoNothing()
-            .run();
+          await db.insert(budgets).values({ id: b.id, yearMonth: b.yearMonth, totalCents: b.totalCents, byCategory: b.byCategory ?? "{}", updatedAt: b.updatedAt ?? nowIso() }).onConflictDoNothing().run();
         }
-
         for (const m of body.meta ?? []) {
-          db.insert(meta)
-            .values({ key: m.key, value: m.value })
-            .onConflictDoNothing()
-            .run();
+          await db.insert(meta).values({ key: m.key, value: m.value }).onConflictDoNothing().run();
         }
       });
     } catch (err) {
-      return c.json(
-        { error: err instanceof Error ? err.message : "导入失败" },
-        500,
-      );
+      return c.json({ error: err instanceof Error ? err.message : "导入失败" }, 500);
     }
-
     return c.json({ ok: true });
   });
