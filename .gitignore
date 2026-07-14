@@ -1,0 +1,17 @@
+node_modules
+dist
+build
+.turbo
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+apps/api/data
+*.db
+*.db-journal
+.vite
+coverage
+.idea
+.vscode/*
+!.vscode/extensions.json

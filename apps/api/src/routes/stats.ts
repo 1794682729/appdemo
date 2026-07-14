@@ -1,0 +1,119 @@
+import { Hono } from "hono";
+import { and, eq, like } from "drizzle-orm";
+import { yearMonthSchema } from "@liushui/shared";
+import { currentYearMonth, listRecentYearMonths } from "@liushui/shared";
+import { db } from "../db/client.js";
+import { transactions, categories } from "../db/schema.js";
+import { requireAuth, type AuthVariables } from "../middleware/auth.js";
+
+export const statsRoute = new Hono<{ Variables: AuthVariables }>()
+  .use("*", requireAuth)
+  .get("/stats/summary", (c) => {
+    const yearMonth = c.req.query("yearMonth") ?? currentYearMonth();
+    const parsed = yearMonthSchema.safeParse(yearMonth);
+    if (!parsed.success) {
+      return c.json({ error: "月份格式应为 YYYY-MM" }, 400);
+    }
+
+    const rows = db
+      .select({
+        type: transactions.type,
+        amountCents: transactions.amountCents,
+      })
+      .from(transactions)
+      .where(like(transactions.date, `${parsed.data}-%`))
+      .all();
+
+    let totalExpense = 0;
+    let totalIncome = 0;
+
+    for (const r of rows) {
+      if (r.type === "expense") totalExpense += r.amountCents;
+      else totalIncome += r.amountCents;
+    }
+
+    return c.json({
+      totalExpense,
+      totalIncome,
+      balance: totalIncome - totalExpense,
+    });
+  })
+
+  .get("/stats/by-category", (c) => {
+    const yearMonth = c.req.query("yearMonth") ?? currentYearMonth();
+    const parsed = yearMonthSchema.safeParse(yearMonth);
+    if (!parsed.success) {
+      return c.json({ error: "月份格式应为 YYYY-MM" }, 400);
+    }
+
+    // Aggregate by category for the given month
+    const catMap = new Map<
+      string,
+      { name: string; icon: string; total: number }
+    >();
+
+    // Pre-load all categories
+    const cats = db.select().from(categories).all();
+    for (const cat of cats) {
+      catMap.set(cat.id, { name: cat.name, icon: cat.icon, total: 0 });
+    }
+
+    const rows = db
+      .select({
+        categoryId: transactions.categoryId,
+        amountCents: transactions.amountCents,
+      })
+      .from(transactions)
+      .where(
+        and(
+          like(transactions.date, `${parsed.data}-%`),
+          eq(transactions.type, "expense"),
+        ),
+      )
+      .all();
+
+    for (const r of rows) {
+      const entry = catMap.get(r.categoryId);
+      if (entry) entry.total += r.amountCents;
+    }
+
+    const result = Array.from(catMap.entries())
+      .filter(([, v]) => v.total > 0)
+      .map(([categoryId, v]) => ({
+        categoryId,
+        categoryName: v.name,
+        categoryIcon: v.icon,
+        totalCents: v.total,
+      }))
+      .sort((a, b) => b.totalCents - a.totalCents);
+
+    return c.json(result);
+  })
+
+  .get("/stats/trend", (c) => {
+    const months = Number(c.req.query("months") ?? "6");
+    const list = listRecentYearMonths(months);
+
+    const result = list.map((ym) => {
+      let expense = 0;
+      let income = 0;
+
+      const rows = db
+        .select({
+          type: transactions.type,
+          amountCents: transactions.amountCents,
+        })
+        .from(transactions)
+        .where(like(transactions.date, `${ym}-%`))
+        .all();
+
+      for (const r of rows) {
+        if (r.type === "expense") expense += r.amountCents;
+        else income += r.amountCents;
+      }
+
+      return { yearMonth: ym, expense, income };
+    });
+
+    return c.json(result);
+  });
