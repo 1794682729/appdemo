@@ -1,11 +1,5 @@
 const BASE = "/api";
 
-let authToken: string | null = null;
-
-export function setAuthToken(t: string | null) {
-  authToken = t;
-}
-
 async function request<T>(
   method: string,
   path: string,
@@ -15,10 +9,6 @@ async function request<T>(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  if (authToken) {
-    headers["Authorization"] = `Bearer ${authToken}`;
-  }
-
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,

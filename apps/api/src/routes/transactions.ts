@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, and, like } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 import { transactionCreateSchema, transactionUpdateSchema, yearMonthSchema } from "@liushui/shared";
 import { yuanToCents } from "@liushui/shared";
 import { db } from "../db/client.js";
