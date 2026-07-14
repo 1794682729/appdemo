@@ -1,12 +1,9 @@
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
 # pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
-
-# Dependencies for better-sqlite3 native build
-RUN apk add --no-cache python3 make g++
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/package.json
@@ -19,11 +16,11 @@ COPY apps/api/src ./apps/api/src
 RUN pnpm install --frozen-lockfile && pnpm build:shared && pnpm --filter @liushui/api build
 
 # Runtime
-FROM node:22-alpine
+FROM node:22-slim
 
 WORKDIR /app
 
-RUN addgroup -S app && adduser -S app -G app
+RUN groupadd -r app && useradd -r -g app app
 RUN mkdir -p /app/data && chown app:app /app/data
 
 COPY --from=builder /app/node_modules ./node_modules
