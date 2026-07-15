@@ -24,6 +24,7 @@ RUN groupadd -r app && useradd -r -g app app
 RUN mkdir -p /app/data && chown app:app /app/data
 
 COPY --from=api-builder /app/node_modules ./node_modules
+COPY --from=api-builder /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=api-builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=api-builder /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=api-builder /app/apps/api/package.json ./apps/api/package.json
