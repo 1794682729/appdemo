@@ -18,22 +18,28 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>()
     return c.json({ hasUser: rows[0].count > 0 });
   })
 
+  // Open registration — no longer blocks after first user
   .post("/auth/setup", async (c) => {
-    const rows = await db.select({ count: count() }).from(users);
-    if (rows[0].count > 0) {
-      return c.json({ error: "已初始化过" }, 403);
-    }
     const body = await c.req.json();
     const parsed = setupSchema.safeParse(body);
     if (!parsed.success) return c.json({ error: parsed.error.issues[0].message }, 400);
 
     const { username, password } = parsed.data;
+
+    // Check username uniqueness
+    const existingRows = await db.select({ id: users.id }).from(users).where(eq(users.username, username)).limit(1);
+    if (existingRows[0]) return c.json({ error: "用户名已被注册" }, 409);
+
     const passwordHash = await bcrypt.hash(password, 12);
     const userId = newId("u");
     const now = nowIso();
 
-    await db.insert(users).values({ id: userId, username, passwordHash, createdAt: now });
-    return c.json({ id: userId, username }, 201);
+    // First user is admin, rest are regular users
+    const totalRows = await db.select({ count: count() }).from(users);
+    const role = totalRows[0].count === 0 ? "admin" : "user";
+
+    await db.insert(users).values({ id: userId, username, passwordHash, role, createdAt: now });
+    return c.json({ id: userId, username, role }, 201);
   })
 
   .post("/auth/login", loginRateLimit, async (c) => {
@@ -58,7 +64,7 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>()
     setCookie(c, SESSION_COOKIE, sessionId, {
       path: "/", httpOnly: true, secure: false, sameSite: "Lax", maxAge: SESSION_DAYS * 86400,
     });
-    return c.json({ id: user.id, username: user.username }, 200);
+    return c.json({ id: user.id, username: user.username, role: user.role }, 200);
   })
 
   .post("/auth/logout", async (c) => {
@@ -71,5 +77,5 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>()
   })
 
   .get("/auth/me", requireAuth, (c) => {
-    return c.json({ id: c.var.userId, username: c.var.username });
+    return c.json({ id: c.var.userId, username: c.var.username, role: c.var.role });
   });

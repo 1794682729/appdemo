@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, count } from "drizzle-orm";
+import { and, eq, count } from "drizzle-orm";
 import { categoryCreateSchema, categoryUpdateSchema } from "@liushui/shared";
 import { db, tx } from "../db/client.js";
 import { categories, transactions } from "../db/schema.js";
@@ -20,50 +20,54 @@ const SEED_CATEGORIES = [
   { name: "其他支出", type: "expense" as const, icon: "💸", sort: 99 },
 ];
 
-async function seedIfEmpty() {
-  const rows = await db.select({ count: count() }).from(categories);
+async function seedIfEmpty(userId: string) {
+  const rows = await db.select({ count: count() }).from(categories).where(eq(categories.userId, userId));
   if ((rows[0].count as number) > 0) return;
   const now = nowIso();
   for (const c of SEED_CATEGORIES) {
-    await db.insert(categories).values({ id: newId("cat"), name: c.name, type: c.type, icon: c.icon, sort: c.sort, createdAt: now });
+    await db.insert(categories).values({ id: newId("cat"), userId, name: c.name, type: c.type, icon: c.icon, sort: c.sort, createdAt: now });
   }
 }
 
 export const categoriesRoute = new Hono<{ Variables: AuthVariables }>()
   .use("*", requireAuth)
   .get("/categories", async (c) => {
-    await seedIfEmpty();
-    const rows = await db.select().from(categories);
+    const userId = c.var.userId;
+    await seedIfEmpty(userId);
+    const rows = await db.select().from(categories).where(eq(categories.userId, userId));
     return c.json(rows);
   })
   .post("/categories", async (c) => {
+    const userId = c.var.userId;
     const body = await c.req.json();
     const parsed = categoryCreateSchema.safeParse(body);
     if (!parsed.success) return c.json({ error: parsed.error.issues[0].message }, 400);
-    const row = { id: newId("cat"), name: parsed.data.name, type: parsed.data.type, icon: parsed.data.icon, sort: parsed.data.sort ?? 0, createdAt: nowIso() };
+    const row = { id: newId("cat"), userId, name: parsed.data.name, type: parsed.data.type, icon: parsed.data.icon, sort: parsed.data.sort ?? 0, createdAt: nowIso() };
     await db.insert(categories).values(row);
     return c.json(row, 201);
   })
   .patch("/categories/:id", async (c) => {
+    const userId = c.var.userId;
     const id = c.req.param("id");
     const body = await c.req.json();
     const parsed = categoryUpdateSchema.safeParse(body);
     if (!parsed.success) return c.json({ error: parsed.error.issues[0].message }, 400);
-    const rows = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
+    const rows = await db.select().from(categories).where(and(eq(categories.id, id), eq(categories.userId, userId))).limit(1);
     const existing = rows[0];
     if (!existing) return c.json({ error: "分类不存在" }, 404);
     const updates = { ...parsed.data };
-    await db.update(categories).set(updates).where(eq(categories.id, id));
+    await db.update(categories).set(updates).where(and(eq(categories.id, id), eq(categories.userId, userId)));
     return c.json({ ...existing, ...updates });
   })
   .delete("/categories/:id", async (c) => {
+    const userId = c.var.userId;
     const id = c.req.param("id");
-    const rows = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
+    const rows = await db.select().from(categories).where(and(eq(categories.id, id), eq(categories.userId, userId))).limit(1);
     const existing = rows[0];
     if (!existing) return c.json({ error: "分类不存在" }, 404);
     await tx(async () => {
       await db.update(transactions).set({ categoryId: "" }).where(eq(transactions.categoryId, id));
-      await db.delete(categories).where(eq(categories.id, id));
+      await db.delete(categories).where(and(eq(categories.id, id), eq(categories.userId, userId)));
     });
     return c.json({ ok: true });
   });

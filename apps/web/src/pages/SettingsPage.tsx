@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { categoriesApi, dataApi } from "../lib/api";
+import { categoriesApi, dataApi, adminApi } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 
 export function SettingsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { username, logout } = useAuthStore();
+  const { username, role, logout } = useAuthStore();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newIcon, setNewIcon] = useState("📦");
@@ -34,7 +34,7 @@ export function SettingsPage() {
       <div className="glass-card rounded-2xl p-6 text-center">
         <div className="glass-accent mx-auto flex h-18 w-18 items-center justify-center rounded-[22px] text-4xl">👤</div>
         <p className="mt-3 text-[18px] font-semibold text-ios-text">{username ?? "—"}</p>
-        <p className="mt-0.5 text-[13px] text-ios-secondary">个人记账</p>
+        <p className="mt-0.5 text-[13px] text-ios-secondary">{role === "admin" ? "管理员" : "成员"}</p>
       </div>
 
       {/* Categories */}
@@ -88,6 +88,9 @@ export function SettingsPage() {
         )}
       </div>
 
+      {/* Admin: User Management */}
+      {role === "admin" && <AdminSection />}
+
       {/* Data */}
       <div className="glass-card overflow-hidden rounded-2xl">
         <button type="button" onClick={() => dataApi.export()} className="ios-row-glass w-full text-left">
@@ -105,6 +108,43 @@ export function SettingsPage() {
         退出登录
       </button>
       <div className="h-4" />
+    </div>
+  );
+}
+
+function AdminSection() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.userId);
+  const { data: userList = [] } = useQuery({ queryKey: ["admin", "users"], queryFn: adminApi.listUsers });
+  const delUserMut = useMutation({
+    mutationFn: (id: string) => adminApi.deleteUser(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+  });
+
+  return (
+    <div className="glass-card overflow-hidden rounded-2xl">
+      <div className="px-5 py-4">
+        <span className="text-[17px] font-medium text-ios-text">成员管理</span>
+        <span className="ml-2 text-[13px] text-ios-tertiary">{userList.length} 人</span>
+      </div>
+      <div className="border-t border-black/[0.06]">
+        {userList.map((u) => (
+          <div key={u.id} className="ios-row-glass">
+            <span className="text-lg">{u.role === "admin" ? "👑" : "👤"}</span>
+            <span className="flex-1 text-[17px] text-ios-text">{u.username}</span>
+            <span className="text-[13px] text-ios-tertiary mr-2">{u.role === "admin" ? "管理员" : "成员"}</span>
+            {u.id !== userId && (
+              <button
+                type="button"
+                onClick={() => { if (confirm(`确定删除「${u.username}」吗？该用户的所有数据将被删除。`)) delUserMut.mutate(u.id); }}
+                className="text-[14px] text-ios-danger"
+              >
+                删除
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

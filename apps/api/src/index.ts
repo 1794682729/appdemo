@@ -12,6 +12,7 @@ import { transactionsRoute } from "./routes/transactions.js";
 import { statsRoute } from "./routes/stats.js";
 import { budgetsRoute } from "./routes/budgets.js";
 import { exportImportRoute } from "./routes/exportImport.js";
+import { adminRoute } from "./routes/admin.js";
 
 await migrate();
 
@@ -39,6 +40,7 @@ app.route("/", transactionsRoute);
 app.route("/", statsRoute);
 app.route("/", budgetsRoute);
 app.route("/", exportImportRoute);
+app.route("/", adminRoute);
 
 app.notFound((c) => c.json({ error: "Not Found" }, 404));
 app.onError((err, c) => {

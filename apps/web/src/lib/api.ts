@@ -47,17 +47,30 @@ export class ApiError extends Error {
 export const auth = {
   status: () => request<{ hasUser: boolean }>("GET", "/auth/status"),
   setup: (username: string, password: string) =>
-    request<{ id: string; username: string }>("POST", "/auth/setup", {
+    request<{ id: string; username: string; role: string }>("POST", "/auth/setup", {
       username,
       password,
     }),
   login: (username: string, password: string) =>
-    request<{ id: string; username: string }>("POST", "/auth/login", {
+    request<{ id: string; username: string; role: string }>("POST", "/auth/login", {
       username,
       password,
     }),
   logout: () => request<{ ok: boolean }>("POST", "/auth/logout"),
-  me: () => request<{ id: string; username: string }>("GET", "/auth/me"),
+  me: () => request<{ id: string; username: string; role: string }>("GET", "/auth/me"),
+};
+
+// Admin
+export type UserDto = {
+  id: string;
+  username: string;
+  role: string;
+  createdAt: string;
+};
+
+export const adminApi = {
+  listUsers: () => request<UserDto[]>("GET", "/admin/users"),
+  deleteUser: (id: string) => request<{ ok: boolean }>("DELETE", `/admin/users/${id}`),
 };
 
 // Categories
