@@ -1,10 +1,11 @@
 import { Hono } from "hono";
-import { and, eq, or, like } from "drizzle-orm";
+import { and, eq, or, like, gt } from "drizzle-orm";
 import { transactionCreateSchema, yuanToCents } from "@liushui/shared";
 import { db } from "../db/client.js";
-import { apiTokens, transactions, categories } from "../db/schema.js";
+import { apiTokens, transactions, categories, sessions } from "../db/schema.js";
 import { newId } from "../lib/id.js";
 import { nowIso } from "../lib/time.js";
+import { getCookie } from "hono/cookie";
 import { parseWithAI } from "../lib/aiParse.js";
 import { saveMerchantRule, findMerchantRuleCategory } from "../lib/merchantRule.js";
 import { requireAuth, type AuthVariables } from "../middleware/auth.js";
@@ -463,8 +464,9 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
 
     const plist = buildShortcutPlist(serverUrl, token);
 
-    // Render install guide page with download link pointing to /file
-    const downloadUrl = `/api/webhook/shortcut/file`;
+    // Build URLs for download methods
+    const fileUrl = `${serverUrl}/api/webhook/shortcut/file?t=${encodeURIComponent(token)}`;
+    const shortcutsSchemeUrl = `shortcuts://import-shortcut?url=${encodeURIComponent(fileUrl)}`;
 
     const html = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -518,17 +520,27 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
     <h2>📲 安装快捷指令</h2>
     <p class="sub">流水记账 · iOS 快捷指令</p>
 
-    <a class="btn" href="${downloadUrl}">下载快捷指令</a>
+    <a class="btn" href="${shortcutsSchemeUrl}" style="margin-bottom:10px;">⚡ 一键导入快捷指令</a>
+    <a class="btn" href="${fileUrl}" style="background:#8e8e93; margin-bottom:24px;">📥 手动下载文件</a>
 
     <div class="steps">
-      <h4>安装步骤</h4>
+      <h4>方法一：一键导入（推荐）</h4>
       <div class="step">
         <span class="step-num">1</span>
-        <p>点击上方按钮，下载 <b>流水记账.shortcut</b></p>
+        <p>点击上方绿色按钮 <b>「⚡ 一键导入」</b></p>
       </div>
       <div class="step">
         <span class="step-num">2</span>
-        <p>点击顶部地址栏左侧 <b>下载图标</b><br>或打开 <b>文件 App</b> → 下载 → 点击文件</p>
+        <p>自动跳转快捷指令 App，点 <b>添加快捷指令</b></p>
+      </div>
+      <h4 style="margin-top:16px;">方法二：手动安装</h4>
+      <div class="step">
+        <span class="step-num">1</span>
+        <p>点灰色按钮下载 .shortcut 文件</p>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <p>打开 <b>文件 App</b> → 下载 → 点击文件</p>
       </div>
       <div class="step">
         <span class="step-num">3</span>
@@ -547,30 +559,45 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
     return c.html(html);
   })
 
-  // Serve raw .shortcut file for download (iOS Safari doesn't handle query-param downloads well)
-  .get("/webhook/shortcut/file", requireAuth, async (c) => {
-    const userId = c.var.userId;
+  // Serve raw .shortcut file (public, identified by ?t= API token param — no cookie auth needed)
+  .get("/webhook/shortcut/file", async (c) => {
+    // Accept either cookie auth or ?t= query param (for Shortcuts app which can't send cookies)
+    let token: string | null = null;
 
-    const rows = await db.select({ token: apiTokens.token }).from(apiTokens)
-      .where(eq(apiTokens.userId, userId)).limit(1);
+    // Try ?t= param first
+    token = c.req.query("t") ?? null;
 
-    let token: string;
-    if (rows[0]) {
-      token = rows[0].token;
-    } else {
-      const countRows = await db.select({ id: apiTokens.id }).from(apiTokens)
-        .where(eq(apiTokens.userId, userId));
-      if (countRows.length >= 5) {
-        return c.json({ error: "Token 数量已达上限（5个），请先在设置页删除旧 Token" }, 400);
+    if (token) {
+      // Validate the token exists in DB
+      const tokenRows = await db.select({ userId: apiTokens.userId, token: apiTokens.token })
+        .from(apiTokens).where(eq(apiTokens.token, token)).limit(1);
+      if (!tokenRows[0]) {
+        return c.json({ error: "无效的 Token" }, 401);
       }
-      token = newId("sk");
-      await db.insert(apiTokens).values({
-        id: newId("tok"),
-        userId,
-        token,
-        label: "快捷指令",
-        createdAt: nowIso(),
-      });
+      // Token is valid, use it
+      token = tokenRows[0].token;
+    }
+    // No ?t= param — try cookie auth by reading the session cookie manually
+    // (we can't use requireAuth middleware here because it returns JSON 401)
+    if (!token) {
+      const sessionId = getCookie(c, "liushui_session");
+      if (sessionId) {
+        const sessionRows = await db
+          .select({ userId: sessions.userId })
+          .from(sessions)
+          .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, nowIso())))
+          .limit(1);
+        if (sessionRows[0]) {
+          // Look up user's token
+          const tokenRows = await db.select({ token: apiTokens.token })
+            .from(apiTokens).where(eq(apiTokens.userId, sessionRows[0].userId)).limit(1);
+          if (tokenRows[0]) token = tokenRows[0].token;
+        }
+      }
+    }
+
+    if (!token) {
+      return c.json({ error: "未授权" }, 401);
     }
 
     const proto = c.req.header("X-Forwarded-Proto") ?? "https";
