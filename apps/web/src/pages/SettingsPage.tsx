@@ -157,6 +157,7 @@ function TokenSection() {
   const { data: tokens = [] } = useQuery({ queryKey: ["webhook", "tokens"], queryFn: webhookApi.list });
   const [creating, setCreating] = useState(false);
   const [newToken, setNewToken] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const createMut = useMutation({
     mutationFn: (label: string) => webhookApi.create(label),
@@ -170,12 +171,23 @@ function TokenSection() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["webhook", "tokens"] }),
   });
 
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      await webhookApi.downloadShortcut();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "下载失败");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="glass-card overflow-hidden rounded-2xl">
       <div className="flex items-center justify-between px-5 py-4">
         <span className="text-[17px] font-medium text-ios-text">API Token</span>
         <button type="button" onClick={() => { setCreating(!creating); setNewToken(null); }} className="text-[15px] font-medium text-ios-accent">
-          {creating ? "取消" : tokens.length < 3 ? "生成" : ""}
+          {creating ? "取消" : tokens.length < 5 ? "生成" : ""}
         </button>
       </div>
 
@@ -205,6 +217,39 @@ function TokenSection() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Shortcut download */}
+      {tokens.length > 0 && (
+        <div className="border-t border-black/[0.06] px-5 py-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚡</span>
+            <div className="flex-1">
+              <p className="text-[15px] font-medium text-ios-text">iOS 快捷指令</p>
+              <p className="text-[13px] text-ios-tertiary leading-relaxed">
+                付完款复制支付消息 → 双击手机背面 → 自动记账
+              </p>
+            </div>
+          </div>
+          <div className="rounded-xl bg-blue-500/8 p-3 space-y-1.5">
+            <p className="text-[12px] font-semibold text-blue-600">设置方法</p>
+            <p className="text-[12px] text-blue-600/80 leading-relaxed">
+              设置 → 辅助功能 → 触控 → 轻点背面<br/>
+              → 选择「轻点两下」→ 找到「流水记账」
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="w-full rounded-full bg-ios-accent py-2.5 text-[15px] font-medium text-white active:scale-[0.98] transition disabled:opacity-40"
+          >
+            {downloading ? "下载中..." : "📥 下载快捷指令"}
+          </button>
+          <p className="text-[11px] text-ios-tertiary text-center">
+            下载后用「文件」App 打开，自动导入快捷指令 App
+          </p>
         </div>
       )}
 

@@ -48,14 +48,22 @@ export function TransactionFormPage() {
     setDate(result.date || todayDate());
     setNote(result.note || "");
 
-    // Match category name to user's categories
-    const matched = categories.find(
-      (c) => c.name === result.categoryName && c.type === result.type
-    ) ?? categories.find(
-      (c) => c.name === result.categoryName || c.name.includes(result.categoryName) || result.categoryName.includes(c.name)
-    );
-    const catId = matched?.id ?? "";
-    if (matched) setCategoryId(matched.id);
+    // Priority: suggestedCategoryId (from merchant rule) > categoryId (AI match) > name match
+    let catId = result.suggestedCategoryId ?? result.categoryId ?? "";
+    if (catId) {
+      setCategoryId(catId);
+    } else {
+      // Fallback to name-based matching
+      const matched = categories.find(
+        (c) => c.name === result.categoryName && c.type === result.type
+      ) ?? categories.find(
+        (c) => c.name === result.categoryName || c.name.includes(result.categoryName) || result.categoryName.includes(c.name)
+      );
+      if (matched) {
+        catId = matched.id;
+        setCategoryId(matched.id);
+      }
+    }
 
     setError("");
 

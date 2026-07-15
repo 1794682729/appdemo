@@ -65,6 +65,20 @@ export const meta = mysqlTable("meta", {
     .references(() => users.id, { onDelete: "cascade" }),
 });
 
+export const merchantRules = mysqlTable("merchant_rules", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  keyword: varchar("keyword", { length: 100 }).notNull(),
+  categoryId: varchar("category_id", { length: 36 })
+    .notNull()
+    .references(() => categories.id),
+  createdAt: varchar("created_at", { length: 24 }).notNull(),
+}, (table) => ({
+  uniqueUserKeyword: uniqueIndex("uq_user_keyword").on(table.userId, table.keyword),
+}));
+
 export const apiTokens = mysqlTable("api_tokens", {
   id: varchar("id", { length: 36 }).primaryKey(),
   userId: varchar("user_id", { length: 36 })

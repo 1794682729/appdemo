@@ -6,6 +6,7 @@ import { db } from "../db/client.js";
 import { transactions } from "../db/schema.js";
 import { newId } from "../lib/id.js";
 import { nowIso } from "../lib/time.js";
+import { saveMerchantRule } from "../lib/merchantRule.js";
 import { requireAuth, type AuthVariables } from "../middleware/auth.js";
 
 export const transactionsRoute = new Hono<{ Variables: AuthVariables }>()
@@ -26,8 +27,13 @@ export const transactionsRoute = new Hono<{ Variables: AuthVariables }>()
     const { type, amountYuan, categoryId, date, note } = parsed.data;
     const amountCents = yuanToCents(amountYuan);
     const now = nowIso();
-    const row = { id: newId("tx"), userId, type, amountCents, categoryId, date, note: note ?? "", createdAt: now, updatedAt: now };
+    const finalNote = note ?? "";
+    const row = { id: newId("tx"), userId, type, amountCents, categoryId, date, note: finalNote, createdAt: now, updatedAt: now };
     await db.insert(transactions).values(row);
+    // Auto-save merchant rule for OCR / shortcut flows
+    if (finalNote.length > 0) {
+      saveMerchantRule(userId, finalNote, categoryId);
+    }
     return c.json(row, 201);
   })
   .patch("/transactions/:id", requireAuth, async (c) => {

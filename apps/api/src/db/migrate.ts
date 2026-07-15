@@ -92,6 +92,18 @@ export async function migrate() {
   `);
   try { await db.execute(`ALTER TABLE meta ADD COLUMN user_id VARCHAR(36);`); } catch { /* exists */ }
 
+  // Merchant rules (auto category memory)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS merchant_rules (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      keyword VARCHAR(100) NOT NULL,
+      category_id VARCHAR(36) NOT NULL REFERENCES categories(id),
+      created_at VARCHAR(24) NOT NULL
+    );
+  `);
+  try { await db.execute(`ALTER TABLE merchant_rules ADD UNIQUE INDEX uq_user_keyword (user_id, keyword);`); } catch { /* exists */ }
+
   // API tokens (for iOS Shortcuts / webhook)
   await db.execute(`
     CREATE TABLE IF NOT EXISTS api_tokens (
