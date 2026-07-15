@@ -248,20 +248,8 @@ export const webhookApi = {
   list: () => request<TokenDto[]>("GET", "/webhook/tokens"),
   create: (label: string) => request<TokenCreated>("POST", "/webhook/tokens", { label }),
   remove: (id: string) => request<{ ok: boolean }>("DELETE", `/webhook/tokens/${id}`),
-  // Download iOS Shortcut .shortcut file (auto-creates a token if none exists)
-  downloadShortcut: async () => {
-    const res = await fetch("/api/webhook/shortcut", { credentials: "include" });
-    if (!res.ok) {
-      let message = res.statusText;
-      try { const err = await res.json(); message = err.error ?? message; } catch { /* ignore */ }
-      throw new ApiError(message, res.status);
-    }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "流水记账.shortcut";
-    a.click();
-    URL.revokeObjectURL(url);
+  // Open iOS Shortcut installation page in new tab (auto-creates a token if none exists)
+  openShortcutPage: () => {
+    window.open("/api/webhook/shortcut", "_blank");
   },
 };

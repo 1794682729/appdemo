@@ -156,7 +156,7 @@ function TokenSection() {
   const { data: tokens = [] } = useQuery({ queryKey: ["webhook", "tokens"], queryFn: webhookApi.list });
   const [creating, setCreating] = useState(false);
   const [newToken, setNewToken] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState(false);
+
 
   const createMut = useMutation({
     mutationFn: (label: string) => webhookApi.create(label),
@@ -170,15 +170,8 @@ function TokenSection() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["webhook", "tokens"] }),
   });
 
-  const handleDownload = async () => {
-    setDownloading(true);
-    try {
-      await webhookApi.downloadShortcut();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "下载失败");
-    } finally {
-      setDownloading(false);
-    }
+  const handleDownload = () => {
+    webhookApi.openShortcutPage();
   };
 
   return (
@@ -241,10 +234,9 @@ function TokenSection() {
           <button
             type="button"
             onClick={handleDownload}
-            disabled={downloading}
-            className="w-full rounded-full bg-ios-accent py-2 text-[15px] font-medium text-white active:scale-[0.98] transition disabled:opacity-40"
+            className="w-full rounded-full bg-ios-accent py-2 text-[15px] font-medium text-white active:scale-[0.98] transition"
           >
-            {downloading ? "下载中..." : "📥 下载快捷指令"}
+            📥 获取快捷指令
           </button>
           <p className="text-[11px] text-ios-tertiary text-center">
             下载后用「文件」App 打开，自动导入快捷指令 App

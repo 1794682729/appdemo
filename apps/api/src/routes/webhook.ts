@@ -462,8 +462,85 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
     const serverUrl = allowedOrigin ?? `${proto}://${host}`;
 
     const plist = buildShortcutPlist(serverUrl, token);
-    return c.body(plist, 200, {
-      "Content-Type": "application/octet-stream",
-      "Content-Disposition": "attachment; filename=liushui.shortcut; filename*=UTF-8''%E6%B5%81%E6%B0%B4%E8%AE%B0%E8%B4%A6.shortcut",
-    });
+    const base64Plist = Buffer.from(plist, "utf-8").toString("base64");
+
+    const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>安装快捷指令</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    background: #f2f2f7;
+    color: #1c1c1e;
+    padding: 32px 20px;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  h2 { font-size: 20px; font-weight: 600; text-align: center; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: #8e8e93; text-align: center; margin-bottom: 24px; }
+  .btn {
+    display: block; width: 100%; padding: 14px 0;
+    background: #0f766e; color: #fff;
+    border-radius: 12px; text-decoration: none;
+    font-size: 17px; font-weight: 500; text-align: center;
+    margin-bottom: 24px;
+  }
+  .btn:active { opacity: 0.8; }
+  .steps { margin-top: 8px; }
+  .steps h4 { font-size: 14px; color: #8e8e93; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #0f766e; color: #fff;
+    font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step p { font-size: 15px; line-height: 1.4; color: #3a3a3c; }
+  .note { font-size: 13px; color: #8e8e93; text-align: center; margin-top: 20px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2>📲 安装快捷指令</h2>
+    <p class="sub">流水记账 · iOS 快捷指令</p>
+
+    <a class="btn" href="data:application/shortcuts;base64,${base64Plist}" download="流水记账.shortcut">下载快捷指令</a>
+
+    <div class="steps">
+      <h4>安装步骤</h4>
+      <div class="step">
+        <span class="step-num">1</span>
+        <p>点击上方按钮，下载 <b>流水记账.shortcut</b></p>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <p>打开 <b>文件 App</b><br>浏览 → 下载 → 点击快捷指令文件</p>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <p>弹出「快捷指令」卡片后，点击<b>添加快捷指令</b></p>
+      </div>
+      <div class="step">
+        <span class="step-num">4</span>
+        <p>设置 → 辅助功能 → 触控 → 轻点背面<br>选择此快捷指令，即可双击背面记账</p>
+      </div>
+    </div>
+  </div>
+  <p class="note">复制支付文字后，双击手机背面即可自动记账</p>
+</body>
+</html>`;
+
+    return c.html(html);
   });

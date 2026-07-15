@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "title": "Design System: 流水记账",
+  "extensions": {
+    "colorMeta": {
+      "ios-bg":           { "role": "neutral",  "displayName": "iOS Background",       "canonical": "#F2F2F7", "tonalRamp": ["#F9F9FB", "#F2F2F7", "#EBEBF0", "#E5E5EA", "#D1D1D6", "#C7C7CC", "#AEAEB2", "#8E8E93"] },
+      "ios-accent":       { "role": "primary",  "displayName": "iOS Blue",              "canonical": "#0A84FF", "tonalRamp": ["#001A33", "#003366", "#004D99", "#0066CC", "#007AFF", "#0A84FF", "#409CFF", "#70B5FF"] },
+      "ios-danger":       { "role": "semantic", "displayName": "iOS Red",                "canonical": "#FF3B30", "tonalRamp": ["#330000", "#660000", "#990000", "#CC0000", "#FF1A0D", "#FF3B30", "#FF6B64", "#FF9B97"] },
+      "ios-income":       { "role": "semantic", "displayName": "iOS Green",              "canonical": "#34C759", "tonalRamp": ["#002200", "#004400", "#006600", "#008800", "#2DB84D", "#34C759", "#6AD47F", "#A0E2A5"] },
+      "ios-text":         { "role": "neutral",  "displayName": "Near-Black Text",        "canonical": "#1C1C1E", "tonalRamp": ["#0A0A0B", "#0F0F10", "#141416", "#1C1C1E", "#2C2C2E", "#3A3A3C", "#48484A", "#636366"] },
+      "ios-secondary":    { "role": "neutral",  "displayName": "Secondary Gray",         "canonical": "#8E8E93", "tonalRamp": ["#5C5C60", "#6E6E73", "#7C7C80", "#8E8E93", "#A0A0A5", "#AEAEB2", "#C7C7CC", "#D1D1D6"] },
+      "ios-tertiary":     { "role": "neutral",  "displayName": "Tertiary Gray",          "canonical": "#C7C7CC", "tonalRamp": ["#8E8E93", "#A0A0A5", "#AEAEB2", "#C7C7CC", "#D1D1D6", "#E5E5EA", "#EBEBF0", "#F2F2F7"] },
+      "ios-separator":    { "role": "neutral",  "displayName": "Separator",              "canonical": "#E5E5EA", "tonalRamp": ["#C7C7CC", "#D1D1D6", "#D9D9DE", "#E5E5EA", "#EBEBF0", "#F2F2F7", "#F5F5F8", "#F9F9FB"] }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "首页月结余大数字，44px bold。唯一使用场景。" },
+      "headline": { "displayName": "Headline", "purpose": "支出/收入子数字，18px semibold。" },
+      "title":    { "displayName": "Title",    "purpose": "列表项标题、分类名、卡片标题，17px medium。" },
+      "body":     { "displayName": "Body",     "purpose": "备注文字、表单内容、设置项，17px regular。" },
+      "caption":  { "displayName": "Caption",  "purpose": "辅助信息、时间戳，13px regular。" },
+      "label":    { "displayName": "Label",    "purpose": "段落标签（支出/收入/月预算），12px semibold uppercase。" },
+      "tab-label":{ "displayName": "Tab Label","purpose": "底部导航标签，10px medium。" }
+    },
+    "shadows": [
+      {
+        "name": "fab-glow",
+        "value": "0 4px 16px rgba(10, 132, 255, 0.35), 0 8px 32px rgba(10, 132, 255, 0.15)",
+        "purpose": "FAB 按钮蓝色辉光。全应用唯一带颜色的投影。"
+      },
+      {
+        "name": "card-structure",
+        "value": "0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.02)",
+        "purpose": "Glass card 结构阴影。三层叠加，透明度递减，定义卡片边界。"
+      },
+      {
+        "name": "segmented-active",
+        "value": "0 1px 3px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)",
+        "purpose": "Segmented control 活跃段微阴影。暗示「被按下」的触感。"
+      },
+      {
+        "name": "tab-bar",
+        "value": "0 0 0 1px rgba(255,255,255,0.2) inset, 0 -1px 10px rgba(0,0,0,0.05)",
+        "purpose": "Tab bar 白色内边框 + 微投影。最高层级浮动感。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        "purpose": "所有状态过渡的默认缓动。250ms 持续时间。"
+      },
+      {
+        "name": "ease-fab",
+        "value": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        "purpose": "FAB 按下: active scale(0.9) + 250ms 过渡。触感反馈。"
+      },
+      {
+        "name": "reduced-motion",
+        "value": "opacity crossfade",
+        "purpose": "prefers-reduced-motion: reduce 时所有动画降级为 opacity 淡入淡出。"
+      }
+    ],
+    "breakpoints": [
+      { "name": "mobile-max", "value": "430px", "purpose": "内容区最大宽度 (max-w-lg)。手机单列布局。" }
+    ]
+  },
+  "components": [
+    {
+      "name": "FAB (Primary Action Button)",
+      "kind": "button",
+      "refersTo": "fab-primary",
+      "description": "首页右下角新建流水按钮。全应用最重要的操作入口。44x44px 圆形，iOS Blue 实色背景，蓝色辉光。",
+      "html": "<button class=\"ds-fab\">+</button>",
+      "css": ".ds-fab { width: 44px; height: 44px; border-radius: 9999px; border: none; background: #0A84FF; color: #FFFFFF; font-size: 24px; font-weight: 300; line-height: 44px; text-align: center; cursor: pointer; box-shadow: 0 4px 16px rgba(10,132,255,0.35), 0 8px 32px rgba(10,132,255,0.15); transition: transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1); } .ds-fab:active { transform: scale(0.9); } .ds-fab:focus-visible { outline: 2px solid #0A84FF; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-fab { transition: opacity 0.15s; } .ds-fab:active { transform: none; opacity: 0.7; } }"
+    },
+    {
+      "name": "Glass Card",
+      "kind": "card",
+      "refersTo": "card-glass",
+      "description": "标准内容卡片。白色半透明玻璃背景 + 24px blur + 结构阴影。16px 圆角。不可嵌套。",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-title\">分类名</p><p class=\"ds-card-sub\">备注文字</p></div>",
+      "css": ".ds-card { background: rgba(255,255,255,0.68); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-radius: 16px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.02); font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Display\", sans-serif; } .ds-card-title { font-size: 17px; font-weight: 500; color: #1C1C1E; margin: 0; } .ds-card-sub { font-size: 13px; font-weight: 400; color: #8E8E93; margin: 4px 0 0; }"
+    },
+    {
+      "name": "Hero Glass Card",
+      "kind": "card",
+      "refersTo": "hero-card",
+      "description": "首页月结余卡片。accent-glass + 渐变叠加层，28px 圆角。白色半透明边框。仅此一处使用。",
+      "html": "<div class=\"ds-hero-card\"><span class=\"ds-hero-label\">07 月结余</span><p class=\"ds-hero-amount\">¥1,234.00</p></div>",
+      "css": ".ds-hero-card { position: relative; overflow: hidden; border-radius: 28px; background: rgba(10,132,255,0.12); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(255,255,255,0.3); padding: 24px; font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Display\", sans-serif; } .ds-hero-card::before { content: ''; position: absolute; inset: 0; border-radius: 28px; background: linear-gradient(135deg, rgba(10,132,255,0.08), transparent, rgba(52,199,89,0.06)); pointer-events: none; } .ds-hero-label { font-size: 13px; font-weight: 500; color: rgba(10,132,255,0.7); text-transform: uppercase; letter-spacing: 0.02em; display: block; position: relative; } .ds-hero-amount { font-size: 44px; font-weight: 700; color: #1C1C1E; letter-spacing: -0.005em; font-variant-numeric: tabular-nums; margin: 6px 0 0; position: relative; }"
+    },
+    {
+      "name": "Floating Tab Bar",
+      "kind": "nav",
+      "refersTo": "tab-bar",
+      "description": "底部导航栏。glass-heavy 背景 (40px blur)，28px 圆角，白色半透明边框。固定在底部，水平居中。",
+      "html": "<nav class=\"ds-tab-bar\"><button class=\"ds-tab ds-tab-active\"><span class=\"ds-tab-icon\">📋</span><span class=\"ds-tab-label\">流水</span></button><button class=\"ds-tab\"><span class=\"ds-tab-icon\">📊</span><span class=\"ds-tab-label\">统计</span></button><button class=\"ds-tab\"><span class=\"ds-tab-icon\">💰</span><span class=\"ds-tab-label\">预算</span></button><button class=\"ds-tab\"><span class=\"ds-tab-icon\">⚙️</span><span class=\"ds-tab-label\">我的</span></button></nav>",
+      "css": ".ds-tab-bar { display: flex; justify-content: space-around; align-items: center; background: rgba(242,242,247,0.72); backdrop-filter: blur(40px) saturate(200%); -webkit-backdrop-filter: blur(40px) saturate(200%); border-radius: 28px; border: 1px solid rgba(255,255,255,0.2); padding: 4px 8px; box-shadow: 0 -1px 10px rgba(0,0,0,0.05); max-width: 430px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Display\", sans-serif; } .ds-tab { display: flex; flex: 1; flex-direction: column; align-items: center; gap: 2px; border-radius: 22px; padding: 6px 0; border: none; background: transparent; cursor: pointer; color: #8E8E93; font-size: 10px; font-weight: 500; transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1); } .ds-tab-icon { font-size: 18px; } .ds-tab-active { background: rgba(10,132,255,0.12); color: #0A84FF; } @media (prefers-reduced-motion: reduce) { .ds-tab { transition: opacity 0.15s; } }"
+    },
+    {
+      "name": "List Row",
+      "kind": "custom",
+      "refersTo": "row-list",
+      "description": "设置项/流水列表行。44px 最小高度，标准三列布局 (图标 + 正文 + 辅助信息)。行间 0.5px 分割线。",
+      "html": "<div class=\"ds-row\"><span class=\"ds-row-icon\">🍔</span><div class=\"ds-row-body\"><span class=\"ds-row-title\">餐饮</span><span class=\"ds-row-note\">麦当劳</span></div><span class=\"ds-row-amount\">−¥45.50</span></div>",
+      "css": ".ds-row { display: flex; align-items: center; padding: 13px 16px; gap: 12px; min-height: 44px; font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Display\", sans-serif; border-bottom: 0.5px solid rgba(60,60,67,0.08); cursor: pointer; transition: background-color 0.15s; } .ds-row:active { background-color: rgba(0,0,0,0.03); } .ds-row-icon { width: 40px; height: 40px; border-radius: 9999px; background: rgba(10,132,255,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; } .ds-row-body { flex: 1; min-width: 0; } .ds-row-title { font-size: 17px; font-weight: 500; color: #1C1C1E; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-row-note { font-size: 13px; color: #8E8E93; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-row-amount { font-size: 17px; font-weight: 600; color: #1C1C1E; font-variant-numeric: tabular-nums; flex-shrink: 0; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented-control",
+      "description": "iOS 风格分段选择器。半透明灰色背景 pill，活跃段白色浮现。用于支出/收入切换。",
+      "html": "<div class=\"ds-segmented\"><button class=\"ds-seg-btn ds-seg-active\">支出</button><button class=\"ds-seg-btn\">收入</button></div>",
+      "css": ".ds-segmented { display: inline-flex; background: rgba(118,118,128,0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 9999px; padding: 3px; font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Display\", sans-serif; } .ds-seg-btn { border-radius: 9999px; padding: 8px 18px; font-size: 14px; font-weight: 500; border: none; background: transparent; color: #1C1C1E; cursor: pointer; transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1); } .ds-seg-active { background: rgba(255,255,255,0.92); box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04); } @media (prefers-reduced-motion: reduce) { .ds-seg-btn { transition: opacity 0.15s; } }"
+    },
+    {
+      "name": "Full-Width Pill Button",
+      "kind": "button",
+      "refersTo": "button-pill",
+      "description": "表单提交 / 确认按钮。全宽完全圆角，iOS Blue 实色背景，白色文字。",
+      "html": "<button class=\"ds-btn-pill\">添加</button>",
+      "css": ".ds-btn-pill { width: 100%; border-radius: 9999px; border: none; background: #0A84FF; color: #FFFFFF; font-size: 15px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Display\", sans-serif; padding: 13px 0; text-align: center; cursor: pointer; transition: opacity 0.2s; } .ds-btn-pill:disabled { opacity: 0.4; cursor: default; } .ds-btn-pill:active:not(:disabled) { opacity: 0.8; } .ds-btn-pill:focus-visible { outline: 2px solid #0A84FF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "custom",
+      "refersTo": "empty-state",
+      "description": "空内容占位。居中布局，圆形图标容器 + 说明文字 + 行动按钮。始终提供下一步。",
+      "html": "<div class=\"ds-empty\"><div class=\"ds-empty-icon\">📝</div><p class=\"ds-empty-text\">这个月还没有流水</p><button class=\"ds-empty-action\">记第一笔</button></div>",
+      "css": ".ds-empty { display: flex; flex-direction: column; align-items: center; padding: 64px 0; text-align: center; font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Display\", sans-serif; } .ds-empty-icon { width: 64px; height: 64px; border-radius: 20px; background: rgba(255,255,255,0.68); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); display: flex; align-items: center; justify-content: center; font-size: 30px; } .ds-empty-text { font-size: 16px; color: #8E8E93; margin: 16px 0 0; } .ds-empty-action { border: none; background: transparent; color: #0A84FF; font-size: 15px; font-weight: 500; font-family: inherit; cursor: pointer; margin-top: 8px; padding: 4px 8px; } .ds-empty-action:focus-visible { outline: 2px solid #0A84FF; outline-offset: 2px; border-radius: 8px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "雾面玻璃桌面",
+    "overview": "想象一张毛玻璃桌面上摊着便签纸、一支笔和一台计算器。光线透过玻璃变得柔和，信息浮在表面却又与背景保持距离。这就是流水记账的视觉隐喻：信息清晰浮现，背景安静退后。\n\n整个界面建立在一套三层玻璃体系上——导航栏的重玻璃 (40px blur)、卡片的日常玻璃 (24px blur)、强调区域的淡玻璃 (20px blur)。玻璃后面是 iOS 系统标准的浅灰底色 (#F2F2F7)，不是纯白，不是 cream，不是 warm-neutral。就是 iOS 的灰。\n\n字体是系统原生的 SF Pro Display + PingFang SC，不做字体选择。颜色是 iOS 语义色板：蓝 = 交互、红 = 支出/危险、绿 = 收入。没有装饰色。没有渐变按钮。没有自定义滚动条。设计退后，让「记账」这个动作成为焦点。",
+    "keyCharacteristics": [
+      "三层毛玻璃体系定义深度，不用阴影",
+      "iOS 系统语义色板，无装饰色",
+      "单一系统字体族，靠字重和大小区分层级",
+      "44px 最小触控区，拇指优先",
+      "淡入淡出过渡，无弹跳，无编排动画"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "iOS Blue 占任一屏幕面积不超过 10%。FAB 按钮、活跃标签、链接——仅此而已。蓝色不作背景、不作装饰、不作渐变。它的稀缺就是它的信号。", "section": "colors" },
+      { "name": "The Semantic Color Rule", "body": "红 = 支出/删除/危险，绿 = 收入/成功。这两个颜色的语义绝对不交叉。一条流水不能同时用红色和绿色。", "section": "colors" },
+      { "name": "The Single Family Rule", "body": "全应用只用一套字体族。不引入第二个字体作「设计感」。SF Pro Display 包含足够多的字重变体来建立清晰层级。", "section": "typography" },
+      { "name": "The No-Fluid Rule", "body": "字号全部固定 rem/px，不用 clamp() 流体缩放。移动端 PWA 只有一个视口宽度。", "section": "typography" },
+      { "name": "The Blur-Not-Shadow Rule", "body": "用 backdrop-filter blur 建立层次，不用 box-shadow。投影只在 FAB 辉光和卡片微结构两处出现。", "section": "elevation" },
+      { "name": "The Glass Tier Rule", "body": "一个元素只属于一层玻璃。不要嵌套 glass-card。不要堆叠毛玻璃。", "section": "elevation" }
+    ],
+    "dos": [
+      "用三层玻璃 (40/24/20px blur) 建立 Z 轴深度",
+      "iOS Blue 仅在 FAB、活跃标签、链接上使用，总面积 ≤10%",
+      "红色 = 支出/删除，绿色 = 收入/成功，语义永不交叉",
+      "所有可触控元素至少 44x44px",
+      "列表项之间用 0.5px row-divider，不用 1px 边框",
+      "卡片用 16px 圆角，按钮用完全圆角 (pill)",
+      "过渡用 200-250ms cubic-bezier 缓出，不弹跳",
+      "prefers-reduced-motion 时禁用所有动画"
+    ],
+    "donts": [
+      "在卡片上同时使用 1px 边框和超过 8px 的投影 (ghost-card 模式)",
+      "卡片圆角超过 28px (圆角过大是 AI 特征)",
+      "嵌套卡片 (卡片内放卡片永远是错的)",
+      "用花哨的财务仪表盘风格 (深色背景、发光卡片、大数字 KPI)",
+      "用 SaaS 数据看板风格 (KPI 卡片网格、渐变面积图)",
+      "用复杂的多列交易表格 (排序、筛选、分页)",
+      "用过度装饰的图标和插画",
+      "用弹窗 (Modal) 处理可以用内联完成的操作",
+      "用 gradient text (background-clip: text)",
+      "用 side-stripe border (左边框 >1px 作为彩色装饰条)",
+      "用系统默认字体之外的第二个字体族",
+      "用 clamp() 流体字号",
+      "用弹性/弹跳缓动曲线 (bounce/elastic easing)"
+    ]
+  }
+}
