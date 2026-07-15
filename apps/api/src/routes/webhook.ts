@@ -462,7 +462,18 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
     const serverUrl = allowedOrigin ?? `${proto}://${host}`;
 
     const plist = buildShortcutPlist(serverUrl, token);
-    const base64Plist = Buffer.from(plist, "utf-8").toString("base64");
+
+    // If ?download=1, return the raw .shortcut file
+    const downloadParam = c.req.query("download");
+    if (downloadParam === "1") {
+      return c.body(plist, 200, {
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": "attachment; filename=liushui.shortcut; filename*=UTF-8''%E6%B5%81%E6%B0%B4%E8%AE%B0%E8%B4%A6.shortcut",
+      });
+    }
+
+    // Otherwise render install guide page
+    const downloadUrl = `/api/webhook/shortcut?download=1`;
 
     const html = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -516,7 +527,7 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
     <h2>📲 安装快捷指令</h2>
     <p class="sub">流水记账 · iOS 快捷指令</p>
 
-    <a class="btn" href="data:application/shortcuts;base64,${base64Plist}" download="流水记账.shortcut">下载快捷指令</a>
+    <a class="btn" href="${downloadUrl}">下载快捷指令</a>
 
     <div class="steps">
       <h4>安装步骤</h4>
@@ -526,7 +537,7 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
       </div>
       <div class="step">
         <span class="step-num">2</span>
-        <p>打开 <b>文件 App</b><br>浏览 → 下载 → 点击快捷指令文件</p>
+        <p>点击顶部地址栏左侧 <b>下载图标</b><br>或打开 <b>文件 App</b> → 下载 → 点击文件</p>
       </div>
       <div class="step">
         <span class="step-num">3</span>
