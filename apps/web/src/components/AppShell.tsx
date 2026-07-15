@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 const tabs = [
   { to: "/", label: "流水", emoji: "📋" },
@@ -8,9 +8,10 @@ const tabs = [
 ];
 
 export function AppShell() {
+  const location = useLocation();
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col bg-ios-bg">
-      <main className="flex-1 px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <main key={location.pathname} className="page-enter flex-1 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-24">
         <Outlet />
       </main>
 

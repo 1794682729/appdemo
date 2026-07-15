@@ -14,6 +14,7 @@ function groupByDate(txs: TransactionDto[]) {
 export function HomePage() {
   const navigate = useNavigate();
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
+  const [search, setSearch] = useState("");
 
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions", yearMonth],
@@ -34,7 +35,16 @@ export function HomePage() {
 
   const catMap = new Map<string, CategoryDto>();
   for (const c of categories) catMap.set(c.id, c);
-  const grouped = groupByDate(transactions);
+
+  // Filter by search keyword (note or category name)
+  const filtered = search.trim()
+    ? transactions.filter((tx) => {
+        const cat = catMap.get(tx.categoryId);
+        const q = search.trim().toLowerCase();
+        return tx.note.toLowerCase().includes(q) || (cat?.name ?? "").toLowerCase().includes(q);
+      })
+    : transactions;
+  const grouped = groupByDate(filtered);
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const expense = summary?.totalExpense ?? 0;
@@ -79,13 +89,8 @@ export function HomePage() {
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/8">
                 <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, budgetPercent * 100)}%`,
-                    background: budgetPercent >= 1
-                      ? "#FF3B30"
-                      : "linear-gradient(90deg, #0A84FF, #5AC8FA)",
-                  }}
+                  className={`h-full rounded-full transition-all duration-500 ${budgetPercent >= 1 ? "bg-ios-danger" : "bg-gradient-to-r from-ios-accent to-[#5AC8FA]"}`}
+                  style={{ width: `${Math.min(100, budgetPercent * 100)}%` }}
                 />
               </div>
             </div>
@@ -104,16 +109,52 @@ export function HomePage() {
         </button>
       </div>
 
+      {/* Search */}
+      {transactions.length > 0 && (
+        <div className="relative">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="搜索备注或分类"
+            className="glass-card block w-full rounded-2xl px-4 py-3 text-[15px] text-ios-text placeholder:text-ios-tertiary outline-none transition focus:bg-white/90"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-ios-secondary/15 px-2 py-1 text-[13px] font-medium text-ios-secondary active:bg-ios-secondary/25"
+            >
+              清除
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Empty */}
       {transactions.length === 0 ? (
-        <div className="py-16 text-center">
-          <div className="glass-card mx-auto inline-flex h-16 w-16 items-center justify-center rounded-[20px] text-3xl">
+        <div className="py-12 text-center">
+          <div className="glass-accent mx-auto inline-flex h-20 w-20 items-center justify-center rounded-[22px] text-4xl shadow-sm">
             📝
           </div>
-          <p className="mt-4 text-[16px] text-ios-secondary">这个月还没有流水</p>
-          <button onClick={() => navigate("/transactions/new")} className="mt-2 text-[15px] font-medium text-ios-accent">
-            记第一笔
+          <p className="mt-5 text-[17px] font-semibold text-ios-text">这个月还没有流水</p>
+          <p className="mt-1.5 text-[14px] text-ios-secondary leading-relaxed max-w-[240px] mx-auto">
+            记录每一笔收支，了解钱花在哪里
+          </p>
+          <button
+            onClick={() => navigate("/transactions/new")}
+            className="mt-6 fab-glow inline-flex h-12 items-center gap-2 rounded-full bg-ios-accent px-8 text-[16px] font-semibold text-white shadow-lg shadow-ios-accent/25 transition active:scale-95"
+          >
+            <span className="text-lg">+</span> 记第一笔
           </button>
+          <p className="mt-4 text-[12px] text-ios-tertiary">
+            也可以用截图或快捷指令自动记账
+          </p>
+        </div>
+      ) : search && filtered.length === 0 ? (
+        <div className="py-16 text-center">
+          <p className="text-[15px] text-ios-secondary">没有匹配「{search}」的流水</p>
+          <button onClick={() => setSearch("")} className="mt-2 text-[15px] font-medium text-ios-accent">清除搜索</button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -130,7 +171,7 @@ export function HomePage() {
                 </div>
 
                 <div className="glass-card overflow-hidden rounded-2xl">
-                  {txs.map((tx, j) => {
+                  {txs.map((tx) => {
                     const cat = catMap.get(tx.categoryId);
                     return (
                       <button
@@ -138,7 +179,6 @@ export function HomePage() {
                         type="button"
                         onClick={() => navigate(`/transactions/new?edit=${tx.id}`)}
                         className="ios-row-glass w-full text-left transition active:bg-black/[0.03]"
-                        style={j < txs.length - 1 ? { borderBottom: "0.5px solid rgba(60,60,67,0.08)" } : undefined}
                       >
                         <div className="glass-accent flex h-10 w-10 items-center justify-center rounded-full text-lg">
                           {cat?.icon ?? "📦"}
@@ -159,8 +199,6 @@ export function HomePage() {
           })}
         </div>
       )}
-
-      <div className="h-4" />
     </div>
   );
 }

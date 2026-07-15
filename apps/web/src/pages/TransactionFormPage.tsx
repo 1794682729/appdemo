@@ -89,6 +89,13 @@ export function TransactionFormPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["transactions"] }); queryClient.invalidateQueries({ queryKey: ["stats"] }); navigate(-1); },
     onError: (err: Error) => setError(err.message),
   });
+  const deleteMutation = useMutation({
+    mutationFn: () => transactionsApi.remove(editId!),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["transactions"] }); queryClient.invalidateQueries({ queryKey: ["stats"] }); navigate(-1); },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); setError("");
@@ -97,7 +104,7 @@ export function TransactionFormPage() {
     editId ? updateMutation.mutate() : createMutation.mutate();
   };
 
-  const saving = createMutation.isPending || updateMutation.isPending || ocrSubmitMut.isPending;
+  const saving = createMutation.isPending || updateMutation.isPending || ocrSubmitMut.isPending || deleteMutation.isPending;
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col hero-mesh">
@@ -135,22 +142,41 @@ export function TransactionFormPage() {
 
         <div className="mt-5 space-y-3">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-            className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text outline-none transition focus:ring-2 focus:ring-ios-accent/30"
+            className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text outline-none transition focus:bg-white/90"
             disabled={saving}
           />
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="备注（选填）"
-            className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text placeholder:text-ios-tertiary outline-none transition focus:ring-2 focus:ring-ios-accent/30"
+            className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text placeholder:text-ios-tertiary outline-none transition focus:bg-white/90"
             disabled={saving}
           />
         </div>
 
-        {error && <p className="mt-4 rounded-2xl bg-red-500/10 px-4 py-3 text-[14px] text-ios-danger backdrop-blur-sm">{error}</p>}
+        {error && <p className="mt-4 rounded-2xl bg-ios-danger/10 px-4 py-3 text-[14px] text-ios-danger backdrop-blur-sm">{error}</p>}
 
-        <div className="safe-bottom mt-auto py-4">
+        <div className="safe-bottom mt-auto py-4 space-y-3">
           <button type="submit" disabled={saving}
             className="w-full rounded-full bg-ios-accent py-4 text-[17px] font-semibold text-white shadow-lg shadow-ios-accent/25 transition active:scale-[0.98] disabled:opacity-40">
             {saving ? "保存中..." : "保存"}
           </button>
+          {editId && (
+            deleteConfirm ? (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setDeleteConfirm(false)} disabled={saving}
+                  className="flex-1 rounded-full border border-ios-separator py-3 text-[15px] font-medium text-ios-text transition active:scale-[0.98]">
+                  取消
+                </button>
+                <button type="button" onClick={() => deleteMutation.mutate()} disabled={saving}
+                  className="flex-1 rounded-full bg-ios-danger py-3 text-[15px] font-semibold text-white transition active:scale-[0.98] disabled:opacity-40">
+                  {deleteMutation.isPending ? "删除中..." : "确认删除"}
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setDeleteConfirm(true)}
+                className="w-full rounded-full py-3 text-[15px] font-medium text-ios-danger transition active:scale-[0.98]">
+                删除这条流水
+              </button>
+            )
+          )}
         </div>
       </form>
     </div>

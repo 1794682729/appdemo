@@ -52,14 +52,14 @@ export function LoginPage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
+      <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input
           type="text"
           autoComplete="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="用户名"
-          className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text placeholder:text-ios-tertiary outline-none transition focus:ring-2 focus:ring-ios-accent/30"
+          className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text placeholder:text-ios-tertiary outline-none transition focus:bg-white/90"
           required minLength={2} maxLength={32}
         />
         <input
@@ -68,11 +68,11 @@ export function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="密码（至少 6 位）"
-          className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text placeholder:text-ios-tertiary outline-none transition focus:ring-2 focus:ring-ios-accent/30"
+          className="glass-card block w-full rounded-2xl px-5 py-4 text-[17px] text-ios-text placeholder:text-ios-tertiary outline-none transition focus:bg-white/90"
           required minLength={6} maxLength={128}
         />
         {error && (
-          <p className="rounded-2xl bg-red-500/10 px-4 py-3 text-[14px] text-ios-danger backdrop-blur-sm">
+          <p className="rounded-2xl bg-ios-danger/10 px-4 py-3 text-[14px] text-ios-danger backdrop-blur-sm">
             {error}
           </p>
         )}

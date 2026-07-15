@@ -66,7 +66,7 @@ export function SettingsPage() {
         )}
 
         <div className="border-t border-black/[0.06]">
-          <p className="px-5 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-ios-tertiary">支出</p>
+          <p className="px-5 py-2 text-[12px] font-semibold uppercase tracking-wide text-ios-tertiary">支出</p>
           {categories.filter((c) => c.type === "expense" || c.type === "both").map((cat) => (
             <div key={cat.id} className="ios-row-glass">
               <span className="text-lg">{cat.icon}</span><span className="flex-1 text-[17px] text-ios-text">{cat.name}</span>
@@ -77,7 +77,7 @@ export function SettingsPage() {
 
         {categories.some((c) => c.type === "income") && (
           <div className="border-t border-black/[0.06]">
-            <p className="px-5 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-ios-tertiary">收入</p>
+            <p className="px-5 py-2 text-[12px] font-semibold uppercase tracking-wide text-ios-tertiary">收入</p>
             {categories.filter((c) => c.type === "income").map((cat) => (
               <div key={cat.id} className="ios-row-glass">
                 <span className="text-lg">{cat.icon}</span><span className="flex-1 text-[17px] text-ios-text">{cat.name}</span>
@@ -107,10 +107,9 @@ export function SettingsPage() {
 
       <button type="button"
         onClick={async () => { await logout(); navigate("/login", { replace: true }); }}
-        className="glass-card w-full rounded-2xl py-4 text-[17px] font-medium text-ios-danger text-center active:bg-red-500/5">
+        className="glass-card w-full rounded-2xl py-4 text-[17px] font-medium text-ios-danger text-center active:bg-ios-danger/5">
         退出登录
       </button>
-      <div className="h-4" />
     </div>
   );
 }
@@ -198,13 +197,13 @@ function TokenSection() {
             type="button"
             onClick={() => createMut.mutate("快捷指令")}
             disabled={createMut.isPending}
-            className="w-full rounded-full bg-ios-accent py-2.5 text-[15px] font-medium text-white disabled:opacity-40"
+            className="w-full rounded-full bg-ios-accent py-2 text-[15px] font-medium text-white disabled:opacity-40"
           >
             {createMut.isPending ? "生成中..." : "生成 Token"}
           </button>
           {newToken && (
-            <div className="rounded-xl bg-green-500/10 p-4 space-y-2">
-              <p className="text-[13px] font-medium text-green-700">Token 已生成（仅显示一次，请立即复制）</p>
+            <div className="rounded-xl bg-ios-income/10 p-4 space-y-2">
+              <p className="text-[13px] font-medium text-ios-text">Token 已生成（仅显示一次，请立即复制）</p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-[12px] bg-white/50 rounded-lg px-3 py-2 break-all select-all">{newToken}</code>
                 <button
@@ -232,9 +231,9 @@ function TokenSection() {
               </p>
             </div>
           </div>
-          <div className="rounded-xl bg-blue-500/8 p-3 space-y-1.5">
-            <p className="text-[12px] font-semibold text-blue-600">设置方法</p>
-            <p className="text-[12px] text-blue-600/80 leading-relaxed">
+          <div className="rounded-xl bg-ios-accent/8 p-3 space-y-1.5">
+            <p className="text-[12px] font-semibold text-ios-accent">设置方法</p>
+            <p className="text-[12px] text-ios-accent/80 leading-relaxed">
               设置 → 辅助功能 → 触控 → 轻点背面<br/>
               → 选择「轻点两下」→ 找到「流水记账」
             </p>
@@ -243,7 +242,7 @@ function TokenSection() {
             type="button"
             onClick={handleDownload}
             disabled={downloading}
-            className="w-full rounded-full bg-ios-accent py-2.5 text-[15px] font-medium text-white active:scale-[0.98] transition disabled:opacity-40"
+            className="w-full rounded-full bg-ios-accent py-2 text-[15px] font-medium text-white active:scale-[0.98] transition disabled:opacity-40"
           >
             {downloading ? "下载中..." : "📥 下载快捷指令"}
           </button>

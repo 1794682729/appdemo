@@ -5,7 +5,8 @@ import { statsApi } from "../lib/api";
 import { MonthSwitcher } from "../components/MonthSwitcher";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
-const COLORS = ["#0A84FF", "#5AC8FA", "#34C759", "#FF9500", "#FF3B30", "#AF52DE", "#FF2D55", "#5856D6", "#00C7BE"];
+// Derived from iOS semantic palette: Blue family → Green family → Red family → Gray
+const COLORS = ["#0A84FF", "#007AFF", "#5AC8FA", "#34C759", "#30D158", "#FF3B30", "#FF6B64", "#8E8E93"];
 
 export function StatsPage() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
@@ -20,15 +21,15 @@ export function StatsPage() {
     <div className="space-y-5">
       <MonthSwitcher yearMonth={yearMonth} onChange={setYearMonth} />
 
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "支出", val: formatCNY(summary?.totalExpense ?? 0), color: "#FF3B30" },
-          { label: "收入", val: formatCNY(summary?.totalIncome ?? 0), color: "#34C759" },
-          { label: "结余", val: formatCNY(summary?.balance ?? 0), color: "#0A84FF" },
+          { label: "支出", val: formatCNY(summary?.totalExpense ?? 0), cls: "text-ios-danger" },
+          { label: "收入", val: formatCNY(summary?.totalIncome ?? 0), cls: "text-ios-income" },
+          { label: "结余", val: formatCNY(summary?.balance ?? 0), cls: "text-ios-accent" },
         ].map((item) => (
           <div key={item.label} className="glass-card rounded-2xl px-3 py-4 text-center">
             <p className="text-[12px] text-ios-secondary">{item.label}</p>
-            <p className="mt-1 text-[16px] font-bold tabular-nums" style={{ color: item.color }}>{item.val}</p>
+            <p className={`mt-1 text-[16px] font-bold tabular-nums ${item.cls}`}>{item.val}</p>
           </div>
         ))}
       </div>
@@ -62,7 +63,7 @@ export function StatsPage() {
         <h2 className="mb-1 text-[15px] font-semibold text-ios-text">近 6 月趋势</h2>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={barData} barGap={4}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(60,60,67,0.08)" vertical={false} />
+            <CartesianGrid stroke="rgba(60,60,67,0.06)" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#8E8E93" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 12, fill: "#8E8E93" }} axisLine={false} tickLine={false} width={45} />
             <Tooltip formatter={(val: number) => `¥${val.toLocaleString()}`} />
@@ -71,7 +72,6 @@ export function StatsPage() {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="h-4" />
     </div>
   );
 }

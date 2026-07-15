@@ -7,12 +7,12 @@ export function CategoryPicker({ categories, selectedId, onSelect, filterType }:
   if (filtered.length === 0) return <p className="py-6 text-center text-[14px] text-ios-tertiary">暂无分类</p>;
 
   return (
-    <div className="grid grid-cols-4 gap-2.5">
+    <div className="grid grid-cols-4 gap-2">
       {filtered.map((cat) => (
         <button
           key={cat.id} type="button" onClick={() => onSelect(cat.id)}
           className={[
-            "flex flex-col items-center gap-1.5 rounded-2xl px-1 py-3.5 transition-all duration-200 active:scale-95",
+            "flex flex-col items-center gap-1.5 rounded-2xl px-1 py-3 transition-all duration-200 active:scale-95",
             selectedId === cat.id
               ? "glass-accent border border-ios-accent/20 text-ios-accent shadow-sm"
               : "glass-card text-ios-text",

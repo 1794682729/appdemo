@@ -106,7 +106,7 @@ export function OcrUploader({ onParsed }: Props) {
           <button
             type="button"
             onClick={handleReset}
-            className="w-full rounded-full border border-ios-accent py-2.5 text-[15px] font-medium text-ios-accent"
+            className="w-full rounded-full border border-ios-accent py-2 text-[15px] font-medium text-ios-accent"
           >
             重试
           </button>
@@ -120,7 +120,7 @@ export function OcrUploader({ onParsed }: Props) {
             <span className="text-[18px] font-bold text-ios-text">
               ¥{preview.amountYuan.toFixed(2)}
             </span>
-            <span className={`text-[15px] font-medium ${preview.type === "expense" ? "text-red-500" : "text-green-500"}`}>
+            <span className={`text-[15px] font-medium ${preview.type === "expense" ? "text-ios-danger" : "text-ios-income"}`}>
               {preview.type === "expense" ? "支出" : "收入"}
             </span>
           </div>
@@ -147,14 +147,14 @@ export function OcrUploader({ onParsed }: Props) {
             <button
               type="button"
               onClick={handleConfirm}
-              className="flex-1 rounded-full bg-ios-accent py-2.5 text-[15px] font-semibold text-white active:scale-[0.98] transition"
+              className="flex-1 rounded-full bg-ios-accent py-2 text-[15px] font-semibold text-white active:scale-[0.98] transition"
             >
               确认，填入表单
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="rounded-full border border-ios-accent px-5 py-2.5 text-[15px] font-medium text-ios-accent"
+              className="rounded-full border border-ios-accent px-5 py-2 text-[15px] font-medium text-ios-accent"
             >
               重试
             </button>
