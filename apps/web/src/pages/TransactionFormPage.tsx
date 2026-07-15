@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { todayDate } from "@liushui/shared";
-import { categoriesApi, transactionsApi } from "../lib/api";
+import { categoriesApi, transactionsApi, type AiParseResult } from "../lib/api";
 import { AmountInput } from "../components/AmountInput";
 import { CategoryPicker } from "../components/CategoryPicker";
+import { OcrUploader } from "../components/OcrUploader";
 
 export function TransactionFormPage() {
   const navigate = useNavigate();
@@ -32,6 +33,44 @@ export function TransactionFormPage() {
     if (editTx) { setType(editTx.type); setAmount((editTx.amountCents / 100).toString()); setCategoryId(editTx.categoryId); setDate(editTx.date); setNote(editTx.note); }
   }, [editTx]);
 
+  // OCR auto-submit: directly creates transaction from parsed result
+  const ocrSubmitMut = useMutation({
+    mutationFn: (data: { type: "expense" | "income"; amountYuan: number; categoryId: string; date: string; note: string }) =>
+      transactionsApi.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["transactions"] }); queryClient.invalidateQueries({ queryKey: ["stats"] }); navigate(-1); },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const handleOcrParsed = (result: AiParseResult) => {
+    // Fill form fields for visual feedback
+    setType(result.type);
+    setAmount(result.amountYuan ? result.amountYuan.toString() : "");
+    setDate(result.date || todayDate());
+    setNote(result.note || "");
+
+    // Match category name to user's categories
+    const matched = categories.find(
+      (c) => c.name === result.categoryName && c.type === result.type
+    ) ?? categories.find(
+      (c) => c.name === result.categoryName || c.name.includes(result.categoryName) || result.categoryName.includes(c.name)
+    );
+    const catId = matched?.id ?? "";
+    if (matched) setCategoryId(matched.id);
+
+    setError("");
+
+    // Auto-submit if we have valid data
+    if (result.amountYuan > 0 && catId) {
+      ocrSubmitMut.mutate({
+        type: result.type,
+        amountYuan: result.amountYuan,
+        categoryId: catId,
+        date: result.date || todayDate(),
+        note: result.note || "",
+      });
+    }
+  };
+
   const createMutation = useMutation({
     mutationFn: () => transactionsApi.create({ type, amountYuan: amount, categoryId, date, note }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["transactions"] }); queryClient.invalidateQueries({ queryKey: ["stats"] }); navigate(-1); },
@@ -50,7 +89,7 @@ export function TransactionFormPage() {
     editId ? updateMutation.mutate() : createMutation.mutate();
   };
 
-  const saving = createMutation.isPending || updateMutation.isPending;
+  const saving = createMutation.isPending || updateMutation.isPending || ocrSubmitMut.isPending;
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col hero-mesh">
@@ -63,6 +102,13 @@ export function TransactionFormPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-1 flex-col px-4 pt-4">
+        {/* OCR uploader (only for new transactions, not edit) */}
+        {!editId && (
+          <div className="mb-4">
+            <OcrUploader onParsed={handleOcrParsed} />
+          </div>
+        )}
+
         <div className="mb-6 flex justify-center">
           <div className="segmented-ios26">
             {(["expense", "income"] as const).map((t) => (

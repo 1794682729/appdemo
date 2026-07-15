@@ -64,3 +64,14 @@ export const meta = mysqlTable("meta", {
   userId: varchar("user_id", { length: 36 })
     .references(() => users.id, { onDelete: "cascade" }),
 });
+
+export const apiTokens = mysqlTable("api_tokens", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 })
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  label: varchar("label", { length: 100 }),
+  lastUsedAt: varchar("last_used_at", { length: 24 }),
+  createdAt: varchar("created_at", { length: 24 }).notNull(),
+});

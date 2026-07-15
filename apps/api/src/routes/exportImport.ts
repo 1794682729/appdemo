@@ -6,8 +6,7 @@ import { requireAuth, type AuthVariables } from "../middleware/auth.js";
 import { nowIso } from "../lib/time.js";
 
 export const exportImportRoute = new Hono<{ Variables: AuthVariables }>()
-  .use("*", requireAuth)
-  .get("/export", async (c) => {
+  .get("/export", requireAuth, async (c) => {
     const userId = c.var.userId;
     const data = {
       exportedAt: nowIso(), version: 1,
@@ -18,7 +17,7 @@ export const exportImportRoute = new Hono<{ Variables: AuthVariables }>()
     };
     return c.json(data);
   })
-  .post("/import", async (c) => {
+  .post("/import", requireAuth, async (c) => {
     const userId = c.var.userId;
     const body = await c.req.json();
     if (!body.categories || !body.transactions) {

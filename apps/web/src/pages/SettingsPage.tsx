@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { categoriesApi, dataApi, adminApi } from "../lib/api";
+import { categoriesApi, dataApi, adminApi, webhookApi } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 
 export function SettingsPage() {
@@ -102,6 +102,9 @@ export function SettingsPage() {
         </label>
       </div>
 
+      {/* API Token（用于快捷指令等自动化） */}
+      <TokenSection />
+
       <button type="button"
         onClick={async () => { await logout(); navigate("/login", { replace: true }); }}
         className="glass-card w-full rounded-2xl py-4 text-[17px] font-medium text-ios-danger text-center active:bg-red-500/5">
@@ -145,6 +148,87 @@ function AdminSection() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function TokenSection() {
+  const queryClient = useQueryClient();
+  const { data: tokens = [] } = useQuery({ queryKey: ["webhook", "tokens"], queryFn: webhookApi.list });
+  const [creating, setCreating] = useState(false);
+  const [newToken, setNewToken] = useState<string | null>(null);
+
+  const createMut = useMutation({
+    mutationFn: (label: string) => webhookApi.create(label),
+    onSuccess: (data) => {
+      setNewToken(data.token);
+      queryClient.invalidateQueries({ queryKey: ["webhook", "tokens"] });
+    },
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => webhookApi.remove(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["webhook", "tokens"] }),
+  });
+
+  return (
+    <div className="glass-card overflow-hidden rounded-2xl">
+      <div className="flex items-center justify-between px-5 py-4">
+        <span className="text-[17px] font-medium text-ios-text">API Token</span>
+        <button type="button" onClick={() => { setCreating(!creating); setNewToken(null); }} className="text-[15px] font-medium text-ios-accent">
+          {creating ? "取消" : tokens.length < 3 ? "生成" : ""}
+        </button>
+      </div>
+
+      {creating && (
+        <div className="border-t border-black/[0.06] px-5 py-4 space-y-3">
+          <p className="text-[13px] text-ios-tertiary">生成 Token 后可用于 iOS 快捷指令等自动化记账场景。</p>
+          <button
+            type="button"
+            onClick={() => createMut.mutate("快捷指令")}
+            disabled={createMut.isPending}
+            className="w-full rounded-full bg-ios-accent py-2.5 text-[15px] font-medium text-white disabled:opacity-40"
+          >
+            {createMut.isPending ? "生成中..." : "生成 Token"}
+          </button>
+          {newToken && (
+            <div className="rounded-xl bg-green-500/10 p-4 space-y-2">
+              <p className="text-[13px] font-medium text-green-700">Token 已生成（仅显示一次，请立即复制）</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-[12px] bg-white/50 rounded-lg px-3 py-2 break-all select-all">{newToken}</code>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(newToken); alert("已复制"); }}
+                  className="rounded-lg bg-ios-accent px-3 py-2 text-[13px] font-medium text-white"
+                >
+                  复制
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tokens.length > 0 && (
+        <div className="border-t border-black/[0.06]">
+          {tokens.map((t) => (
+            <div key={t.id} className="ios-row-glass">
+              <span className="text-lg">🔑</span>
+              <span className="flex-1">
+                <span className="text-[17px] text-ios-text">{t.label}</span>
+                <span className="ml-2 text-[13px] text-ios-tertiary">...{t.tokenPreview}</span>
+              </span>
+              {t.lastUsedAt && <span className="text-[12px] text-ios-tertiary mr-2">{new Date(t.lastUsedAt).toLocaleDateString()}</span>}
+              <button
+                type="button"
+                onClick={() => { if (confirm("删除此 Token？相关快捷指令将无法记账。")) delMut.mutate(t.id); }}
+                className="text-[14px] text-ios-danger"
+              >
+                删除
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

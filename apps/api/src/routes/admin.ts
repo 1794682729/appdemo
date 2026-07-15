@@ -5,12 +5,11 @@ import { users } from "../db/schema.js";
 import { requireAuth, requireAdmin, type AuthVariables } from "../middleware/auth.js";
 
 export const adminRoute = new Hono<{ Variables: AuthVariables }>()
-  .use("*", requireAuth, requireAdmin)
-  .get("/admin/users", async (c) => {
+  .get("/admin/users", requireAuth, requireAdmin, async (c) => {
     const rows = await db.select({ id: users.id, username: users.username, role: users.role, createdAt: users.createdAt }).from(users);
     return c.json(rows);
   })
-  .delete("/admin/users/:id", async (c) => {
+  .delete("/admin/users/:id", requireAuth, requireAdmin, async (c) => {
     const targetId = c.req.param("id");
     if (targetId === c.var.userId) {
       return c.json({ error: "不能删除自己" }, 400);

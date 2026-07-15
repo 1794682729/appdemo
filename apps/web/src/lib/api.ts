@@ -189,3 +189,61 @@ export const dataApi = {
         request<{ ok: boolean }>("POST", "/import", data),
       ),
 };
+
+// OCR
+export type OcrResult = {
+  rawText: string;
+};
+
+export const ocrApi = {
+  parse: async (imageFile: File): Promise<OcrResult> => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+    const res = await fetch("/api/ocr/parse", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    if (!res.ok) {
+      let message = res.statusText;
+      try { const err = await res.json(); message = err.error ?? message; } catch { /* ignore */ }
+      throw new ApiError(message, res.status);
+    }
+    return res.json();
+  },
+};
+
+// AI
+export type AiParseResult = {
+  type: "expense" | "income";
+  amountYuan: number;
+  categoryName: string;
+  date: string;
+  note: string;
+};
+
+export const aiApi = {
+  parse: (text: string) =>
+    request<AiParseResult>("POST", "/ai/parse", { text }),
+};
+
+// Webhook tokens
+export type TokenDto = {
+  id: string;
+  tokenPreview: string;
+  label: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+};
+
+export type TokenCreated = {
+  token: string;
+  label: string;
+  createdAt: string;
+};
+
+export const webhookApi = {
+  list: () => request<TokenDto[]>("GET", "/webhook/tokens"),
+  create: (label: string) => request<TokenCreated>("POST", "/webhook/tokens", { label }),
+  remove: (id: string) => request<{ ok: boolean }>("DELETE", `/webhook/tokens/${id}`),
+};

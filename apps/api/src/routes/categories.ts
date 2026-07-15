@@ -30,14 +30,13 @@ async function seedIfEmpty(userId: string) {
 }
 
 export const categoriesRoute = new Hono<{ Variables: AuthVariables }>()
-  .use("*", requireAuth)
-  .get("/categories", async (c) => {
+  .get("/categories", requireAuth, async (c) => {
     const userId = c.var.userId;
     await seedIfEmpty(userId);
     const rows = await db.select().from(categories).where(eq(categories.userId, userId));
     return c.json(rows);
   })
-  .post("/categories", async (c) => {
+  .post("/categories", requireAuth, async (c) => {
     const userId = c.var.userId;
     const body = await c.req.json();
     const parsed = categoryCreateSchema.safeParse(body);
@@ -46,7 +45,7 @@ export const categoriesRoute = new Hono<{ Variables: AuthVariables }>()
     await db.insert(categories).values(row);
     return c.json(row, 201);
   })
-  .patch("/categories/:id", async (c) => {
+  .patch("/categories/:id", requireAuth, async (c) => {
     const userId = c.var.userId;
     const id = c.req.param("id");
     const body = await c.req.json();
@@ -59,7 +58,7 @@ export const categoriesRoute = new Hono<{ Variables: AuthVariables }>()
     await db.update(categories).set(updates).where(and(eq(categories.id, id), eq(categories.userId, userId)));
     return c.json({ ...existing, ...updates });
   })
-  .delete("/categories/:id", async (c) => {
+  .delete("/categories/:id", requireAuth, async (c) => {
     const userId = c.var.userId;
     const id = c.req.param("id");
     const rows = await db.select().from(categories).where(and(eq(categories.id, id), eq(categories.userId, userId))).limit(1);

@@ -92,6 +92,18 @@ export async function migrate() {
   `);
   try { await db.execute(`ALTER TABLE meta ADD COLUMN user_id VARCHAR(36);`); } catch { /* exists */ }
 
+  // API tokens (for iOS Shortcuts / webhook)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS api_tokens (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token VARCHAR(64) NOT NULL UNIQUE,
+      label VARCHAR(100),
+      last_used_at VARCHAR(24),
+      created_at VARCHAR(24) NOT NULL
+    );
+  `);
+
   // Indexes
   for (const sql of [
     `CREATE INDEX idx_transactions_date ON transactions(\`date\`)`,

@@ -13,6 +13,9 @@ import { statsRoute } from "./routes/stats.js";
 import { budgetsRoute } from "./routes/budgets.js";
 import { exportImportRoute } from "./routes/exportImport.js";
 import { adminRoute } from "./routes/admin.js";
+import { ocrRoute } from "./routes/ocr.js";
+import { aiRoute } from "./routes/ai.js";
+import { webhookRoute } from "./routes/webhook.js";
 
 await migrate();
 
@@ -41,6 +44,9 @@ app.route("/", statsRoute);
 app.route("/", budgetsRoute);
 app.route("/", exportImportRoute);
 app.route("/", adminRoute);
+app.route("/", ocrRoute);
+app.route("/", aiRoute);
+app.route("/", webhookRoute);
 
 app.notFound((c) => c.json({ error: "Not Found" }, 404));
 app.onError((err, c) => {

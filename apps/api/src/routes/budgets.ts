@@ -8,8 +8,7 @@ import { nowIso } from "../lib/time.js";
 import { requireAuth, type AuthVariables } from "../middleware/auth.js";
 
 export const budgetsRoute = new Hono<{ Variables: AuthVariables }>()
-  .use("*", requireAuth)
-  .get("/budgets/:yearMonth", async (c) => {
+  .get("/budgets/:yearMonth", requireAuth, async (c) => {
     const userId = c.var.userId;
     const ym = c.req.param("yearMonth");
     const parsed = yearMonthSchema.safeParse(ym);
@@ -20,7 +19,7 @@ export const budgetsRoute = new Hono<{ Variables: AuthVariables }>()
     const byCategory = row.byCategory ? (typeof row.byCategory === "string" ? JSON.parse(row.byCategory) : row.byCategory) : {};
     return c.json({ ...row, byCategory });
   })
-  .put("/budgets/:yearMonth", async (c) => {
+  .put("/budgets/:yearMonth", requireAuth, async (c) => {
     const userId = c.var.userId;
     const ym = c.req.param("yearMonth");
     const parsed = yearMonthSchema.safeParse(ym);
@@ -28,7 +27,6 @@ export const budgetsRoute = new Hono<{ Variables: AuthVariables }>()
     const body = await c.req.json();
     const p = budgetUpsertSchema.safeParse(body);
     if (!p.success) return c.json({ error: p.error.issues[0].message }, 400);
-
     const rows = await db.select().from(budgets).where(and(eq(budgets.userId, userId), eq(budgets.yearMonth, parsed.data))).limit(1);
     const existing = rows[0];
     const totalCents = p.data.totalYuan != null && p.data.totalYuan !== "" ? yuanToCents(p.data.totalYuan) : null;
@@ -38,7 +36,6 @@ export const budgetsRoute = new Hono<{ Variables: AuthVariables }>()
         if (val !== "" && val != null) byCategory[catId] = yuanToCents(val);
       }
     }
-
     if (existing) {
       await db.update(budgets).set({ totalCents, byCategory, updatedAt: nowIso() }).where(and(eq(budgets.id, existing.id), eq(budgets.userId, userId)));
       return c.json({ ...existing, totalCents, byCategory });

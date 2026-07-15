@@ -13,12 +13,14 @@
   "dependencies": {
     "@hono/node-server": "1.14.4",
     "@liushui/shared": "workspace:*",
+    "@tesseract.js-data/chi_sim": "^1.0.0",
     "bcryptjs": "3.0.2",
     "dotenv": "^17.4.2",
     "drizzle-orm": "0.44.2",
     "hono": "4.7.11",
     "mysql2": "^3.23.0",
     "nanoid": "5.1.5",
+    "tesseract.js": "5",
     "zod": "3.25.67"
   },
   "devDependencies": {

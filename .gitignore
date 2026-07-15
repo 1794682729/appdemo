@@ -11,6 +11,7 @@ apps/api/data
 *.db
 *.db-journal
 .vite
+*.tsbuildinfo
 coverage
 .idea
 .vscode/*
