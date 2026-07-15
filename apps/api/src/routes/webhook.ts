@@ -182,39 +182,12 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
     }
   })
 
-  // iOS 18 shortcut install guide — manual creation in Shortcuts app
-  // (iOS 18 blocks all unsigned .shortcut file imports)
+  // Quick-access shortcut guide — just opens the app
   .get("/webhook/shortcut", requireAuth, async (c) => {
-    const userId = c.var.userId;
-
-    // Get or create a token
-    const rows = await db.select({ token: apiTokens.token }).from(apiTokens)
-      .where(eq(apiTokens.userId, userId)).limit(1);
-
-    let token: string;
-    if (rows[0]) {
-      token = rows[0].token;
-    } else {
-      const countRows = await db.select({ id: apiTokens.id }).from(apiTokens)
-        .where(eq(apiTokens.userId, userId));
-      if (countRows.length >= 5) {
-        return c.json({ error: "Token 数量已达上限（5个），请先在设置页删除旧 Token" }, 400);
-      }
-      token = newId("sk");
-      await db.insert(apiTokens).values({
-        id: newId("tok"),
-        userId,
-        token,
-        label: "快捷指令",
-        createdAt: nowIso(),
-      });
-    }
-
     const proto = c.req.header("X-Forwarded-Proto") ?? "https";
     const host = c.req.header("Host") ?? "localhost:3001";
     const allowedOrigin = process.env.ALLOWED_ORIGIN;
-    const serverUrl = allowedOrigin ?? `${proto}://${host}`;
-    const apiUrl = `${serverUrl}/api/webhook/quick`;
+    const appUrl = allowedOrigin ?? `${proto}://${host}`;
 
     const html = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -228,65 +201,30 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
   .card { background: #fff; border-radius: 16px; padding: 24px 20px; max-width: 400px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   h2 { font-size: 20px; font-weight: 600; text-align: center; margin-bottom: 4px; }
   .sub { font-size: 14px; color: #8e8e93; text-align: center; margin-bottom: 20px; }
-  .copy-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-  .copy-row label { font-size: 12px; color: #8e8e93; width: 36px; flex-shrink: 0; }
-  .copy-row code { flex:1; font-size: 12px; background: #f2f2f7; padding: 8px 10px; border-radius: 8px; word-break: break-all; }
-  .copy-row button { flex-shrink:0; font-size:12px; padding:6px 12px; border:none; background:#0f766e; color:#fff; border-radius:8px; }
-  .copy-row button:active { opacity:0.8; }
-  .divider { border-top:1px solid #e5e5ea; margin:20px 0; }
-  h4 { font-size:13px; color:#8e8e93; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
-  .step { display:flex; gap:10px; align-items:flex-start; margin-bottom:12px; }
-  .step-num { width:20px;height:20px;border-radius:50%;background:#0f766e;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px; }
-  .step-text { font-size:14px;line-height:1.5;color:#3a3a3c; }
-  .step-text b { color:#1c1c1e; }
-  .step-text .val { display:inline-block;background:#f2f2f7;padding:1px 6px;border-radius:4px;font-size:12px;word-break:break-all; }
-  .note { font-size:12px;color:#8e8e93;text-align:center;margin-top:16px;line-height:1.5; }
+  .divider { border-top: 1px solid #e5e5ea; margin: 20px 0; }
+  h4 { font-size: 13px; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .step { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+  .step-num { width: 20px; height: 20px; border-radius: 50%; background: #0f766e; color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-text { font-size: 14px; line-height: 1.5; color: #3a3a3c; }
+  .step-text b { color: #1c1c1e; }
+  .note { font-size: 12px; color: #8e8e93; text-align: center; margin-top: 16px; line-height: 1.5; }
 </style>
 </head>
 <body>
   <div class="card">
     <h2>&#x1F4F2; 创建快捷指令</h2>
-    <p class="sub">iOS 18 需在快捷指令 App 中手动创建（约 2 分钟）</p>
-
-    <h4>准备工作：复制以下信息</h4>
-    <div class="copy-row">
-      <label>地址</label>
-      <code id="url">${apiUrl}</code>
-      <button onclick="copyText('url')">复制</button>
-    </div>
-    <div class="copy-row">
-      <label>Token</label>
-      <code id="token">${token}</code>
-      <button onclick="copyText('token')">复制</button>
-    </div>
+    <p class="sub">双击背面快速打开流水记账</p>
 
     <div class="divider"></div>
+    <h4>操作步骤</h4>
 
-    <h4>创建步骤</h4>
     <div class="step"><span class="step-num">1</span><div class="step-text">打开 <b>快捷指令 App</b>，点右上角 <b>+</b> 新建</div></div>
-    <div class="step"><span class="step-num">2</span><div class="step-text">搜索添加 <b>"获取剪贴板"</b></div></div>
-    <div class="step"><span class="step-num">3</span><div class="step-text">搜索添加 <b>"URL"</b>，填入：<br><span class="val">${apiUrl}</span></div></div>
-    <div class="step"><span class="step-num">4</span><div class="step-text">搜索添加 <b>"获取 URL 内容"</b>，点展开修改：<br>· 方法 → <b>POST</b><br>· 请求头 → 添加两行：<br>&nbsp;&nbsp;<span class="val">Authorization</span> : <span class="val">Bearer ${token}</span><br>&nbsp;&nbsp;<span class="val">Content-Type</span> : <span class="val">application/json</span><br>· 请求体 → <b>JSON</b>，添加字段：<br>&nbsp;&nbsp;<span class="val">text</span> → 选「剪贴板」变量</div></div>
-    <div class="step"><span class="step-num">5</span><div class="step-text">搜索添加 <b>"获取词典值"</b>，键填 <span class="val">message</span><br>（从上一步 URL 内容获取）</div></div>
-    <div class="step"><span class="step-num">6</span><div class="step-text">再添加一个 <b>"获取词典值"</b>，键填 <span class="val">error</span></div></div>
-    <div class="step"><span class="step-num">7</span><div class="step-text">搜索添加 <b>"如果"</b>，条件选 <b>"有任何值"</b><br>输入选上一步的「词典值(error)」</div></div>
-    <div class="step"><span class="step-num">8</span><div class="step-text">在「如果」下方添加 <b>"显示通知"</b>：<br>标题 <span class="val">记账失败</span>，正文选「词典值(error)」</div></div>
-    <div class="step"><span class="step-num">9</span><div class="step-text">在「否则」下方添加 <b>"显示通知"</b>：<br>标题 <span class="val">流水记账</span>，正文选「词典值(message)」</div></div>
-    <div class="step"><span class="step-num">10</span><div class="step-text">点右上角 <b>完成</b>，命名为 <b>流水记账</b></div></div>
-    <div class="step"><span class="step-num">11</span><div class="step-text">设置 → 辅助功能 → 触控 → 轻点背面 → 选「流水记账」</div></div>
+    <div class="step"><span class="step-num">2</span><div class="step-text">搜索添加 <b>"打开 URL"</b>（Safari 分类下）</div></div>
+    <div class="step"><span class="step-num">3</span><div class="step-text">URL 填 <b>${appUrl}</b></div></div>
+    <div class="step"><span class="step-num">4</span><div class="step-text">点右上角 <b>完成</b>，命名为 <b>流水记账</b></div></div>
+    <div class="step"><span class="step-num">5</span><div class="step-text">设置 → 辅助功能 → 触控 → 轻点背面 → 选「流水记账」</div></div>
   </div>
-  <p class="note">复制支付文字后，双击手机背面即可自动记账</p>
-<script>
-function copyText(id) {
-  var el = document.getElementById(id);
-  var text = el.textContent;
-  navigator.clipboard.writeText(text).then(function() {
-    var btn = event.target;
-    btn.textContent = '已复制';
-    setTimeout(function(){ btn.textContent = '复制'; }, 1500);
-  });
-}
-</script>
+  <p class="note">双击手机背面即可快速打开记账 App</p>
 </body>
 </html>`;
 
