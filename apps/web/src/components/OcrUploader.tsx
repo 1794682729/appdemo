@@ -68,7 +68,6 @@ export function OcrUploader({ onParsed }: Props) {
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) handleFile(file);

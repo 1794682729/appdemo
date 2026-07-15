@@ -464,6 +464,6 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
     const plist = buildShortcutPlist(serverUrl, token);
     return c.body(plist, 200, {
       "Content-Type": "application/octet-stream",
-      "Content-Disposition": 'attachment; filename="流水记账.shortcut"',
+      "Content-Disposition": "attachment; filename=liushui.shortcut; filename*=UTF-8''%E6%B5%81%E6%B0%B4%E8%AE%B0%E8%B4%A6.shortcut",
     });
   });
