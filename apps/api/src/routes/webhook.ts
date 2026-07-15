@@ -463,17 +463,8 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
 
     const plist = buildShortcutPlist(serverUrl, token);
 
-    // If ?download=1, return the raw .shortcut file
-    const downloadParam = c.req.query("download");
-    if (downloadParam === "1") {
-      return c.body(plist, 200, {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": "attachment; filename=liushui.shortcut; filename*=UTF-8''%E6%B5%81%E6%B0%B4%E8%AE%B0%E8%B4%A6.shortcut",
-      });
-    }
-
-    // Otherwise render install guide page
-    const downloadUrl = `/api/webhook/shortcut?download=1`;
+    // Render install guide page with download link pointing to /file
+    const downloadUrl = `/api/webhook/shortcut/file`;
 
     const html = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -554,4 +545,42 @@ export const webhookRoute = new Hono<{ Variables: AuthVariables }>()
 </html>`;
 
     return c.html(html);
+  })
+
+  // Serve raw .shortcut file for download (iOS Safari doesn't handle query-param downloads well)
+  .get("/webhook/shortcut/file", requireAuth, async (c) => {
+    const userId = c.var.userId;
+
+    const rows = await db.select({ token: apiTokens.token }).from(apiTokens)
+      .where(eq(apiTokens.userId, userId)).limit(1);
+
+    let token: string;
+    if (rows[0]) {
+      token = rows[0].token;
+    } else {
+      const countRows = await db.select({ id: apiTokens.id }).from(apiTokens)
+        .where(eq(apiTokens.userId, userId));
+      if (countRows.length >= 5) {
+        return c.json({ error: "Token 数量已达上限（5个），请先在设置页删除旧 Token" }, 400);
+      }
+      token = newId("sk");
+      await db.insert(apiTokens).values({
+        id: newId("tok"),
+        userId,
+        token,
+        label: "快捷指令",
+        createdAt: nowIso(),
+      });
+    }
+
+    const proto = c.req.header("X-Forwarded-Proto") ?? "https";
+    const host = c.req.header("Host") ?? "localhost:3001";
+    const allowedOrigin = process.env.ALLOWED_ORIGIN;
+    const serverUrl = allowedOrigin ?? `${proto}://${host}`;
+
+    const plist = buildShortcutPlist(serverUrl, token);
+    return c.body(plist, 200, {
+      "Content-Type": "application/octet-stream",
+      "Content-Disposition": "attachment; filename=liushui.shortcut; filename*=UTF-8''%E6%B5%81%E6%B0%B4%E8%AE%B0%E8%B4%A6.shortcut",
+    });
   });
