@@ -14,12 +14,12 @@ const SESSION_DAYS = 7;
 
 export const authRoute = new Hono<{ Variables: AuthVariables }>()
   .get("/auth/status", async (c) => {
-    const rows = await db.select({ count: count() }).from(users).all();
+    const rows = await db.select({ count: count() }).from(users);
     return c.json({ hasUser: rows[0].count > 0 });
   })
 
   .post("/auth/setup", async (c) => {
-    const rows = await db.select({ count: count() }).from(users).all();
+    const rows = await db.select({ count: count() }).from(users);
     if (rows[0].count > 0) {
       return c.json({ error: "已初始化过" }, 403);
     }
@@ -32,7 +32,7 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>()
     const userId = newId("u");
     const now = nowIso();
 
-    await db.insert(users).values({ id: userId, username, passwordHash, createdAt: now }).run();
+    await db.insert(users).values({ id: userId, username, passwordHash, createdAt: now });
     return c.json({ id: userId, username }, 201);
   })
 
@@ -42,7 +42,8 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>()
     if (!parsed.success) return c.json({ error: parsed.error.issues[0].message }, 400);
 
     const { username, password } = parsed.data;
-    const user = await db.select().from(users).where(eq(users.username, username)).get();
+    const rows = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    const user = rows[0];
     if (!user) return c.json({ error: "用户名或密码错误" }, 401);
 
     const ok = await bcrypt.compare(password, user.passwordHash);
@@ -52,7 +53,7 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>()
     const now = nowIso();
     const expiresAt = daysFromNowIso(SESSION_DAYS);
 
-    await db.insert(sessions).values({ id: sessionId, userId: user.id, expiresAt, createdAt: now }).run();
+    await db.insert(sessions).values({ id: sessionId, userId: user.id, expiresAt, createdAt: now });
 
     setCookie(c, SESSION_COOKIE, sessionId, {
       path: "/", httpOnly: true, secure: false, sameSite: "Lax", maxAge: SESSION_DAYS * 86400,
@@ -63,7 +64,7 @@ export const authRoute = new Hono<{ Variables: AuthVariables }>()
   .post("/auth/logout", async (c) => {
     const sessionId = getCookie(c, SESSION_COOKIE);
     if (sessionId) {
-      await db.delete(sessions).where(eq(sessions.id, sessionId)).run();
+      await db.delete(sessions).where(eq(sessions.id, sessionId));
       deleteCookie(c, SESSION_COOKIE, { path: "/" });
     }
     return c.json({ ok: true });

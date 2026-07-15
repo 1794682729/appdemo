@@ -15,7 +15,7 @@ export const transactionsRoute = new Hono<{ Variables: AuthVariables }>()
     const parsed = yearMonthSchema.safeParse(yearMonth);
     if (!parsed.success) return c.json({ error: "月份格式应为 YYYY-MM" }, 400);
 
-    const rows = await db.select().from(transactions).where(like(transactions.date, `${parsed.data}-%`)).all();
+    const rows = await db.select().from(transactions).where(like(transactions.date, `${parsed.data}-%`));
     rows.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
     return c.json(rows);
   })
@@ -27,7 +27,7 @@ export const transactionsRoute = new Hono<{ Variables: AuthVariables }>()
     const amountCents = yuanToCents(amountYuan);
     const now = nowIso();
     const row = { id: newId("tx"), type, amountCents, categoryId, date, note: note ?? "", createdAt: now, updatedAt: now };
-    await db.insert(transactions).values(row).run();
+    await db.insert(transactions).values(row);
     return c.json(row, 201);
   })
   .patch("/transactions/:id", async (c) => {
@@ -35,7 +35,8 @@ export const transactionsRoute = new Hono<{ Variables: AuthVariables }>()
     const body = await c.req.json();
     const parsed = transactionUpdateSchema.safeParse(body);
     if (!parsed.success) return c.json({ error: parsed.error.issues[0].message }, 400);
-    const existing = await db.select().from(transactions).where(eq(transactions.id, id)).get();
+    const rows = await db.select().from(transactions).where(eq(transactions.id, id)).limit(1);
+    const existing = rows[0];
     if (!existing) return c.json({ error: "流水不存在" }, 404);
     const updates: Record<string, unknown> = { updatedAt: nowIso() };
     if (parsed.data.type != null) updates.type = parsed.data.type;
@@ -43,13 +44,14 @@ export const transactionsRoute = new Hono<{ Variables: AuthVariables }>()
     if (parsed.data.categoryId != null) updates.categoryId = parsed.data.categoryId;
     if (parsed.data.date != null) updates.date = parsed.data.date;
     if (parsed.data.note != null) updates.note = parsed.data.note;
-    await db.update(transactions).set(updates).where(eq(transactions.id, id)).run();
+    await db.update(transactions).set(updates).where(eq(transactions.id, id));
     return c.json({ ...existing, ...updates });
   })
   .delete("/transactions/:id", async (c) => {
     const id = c.req.param("id");
-    const existing = await db.select().from(transactions).where(eq(transactions.id, id)).get();
+    const rows = await db.select().from(transactions).where(eq(transactions.id, id)).limit(1);
+    const existing = rows[0];
     if (!existing) return c.json({ error: "流水不存在" }, 404);
-    await db.delete(transactions).where(eq(transactions.id, id)).run();
+    await db.delete(transactions).where(eq(transactions.id, id));
     return c.json({ ok: true });
   });

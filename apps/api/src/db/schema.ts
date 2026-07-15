@@ -1,52 +1,52 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { mysqlTable, varchar, int, json } from "drizzle-orm/mysql-core";
 
-export const users = sqliteTable("users", {
-  id: text("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  createdAt: text("created_at").notNull(),
+export const users = mysqlTable("users", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  username: varchar("username", { length: 32 }).notNull().unique(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  createdAt: varchar("created_at", { length: 24 }).notNull(),
 });
 
-export const sessions = sqliteTable("sessions", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
+export const sessions = mysqlTable("sessions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 })
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  expiresAt: text("expires_at").notNull(),
-  createdAt: text("created_at").notNull(),
+  expiresAt: varchar("expires_at", { length: 24 }).notNull(),
+  createdAt: varchar("created_at", { length: 24 }).notNull(),
 });
 
-export const categories = sqliteTable("categories", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type").notNull(), // expense | income | both
-  icon: text("icon").notNull(),
-  sort: integer("sort").notNull().default(0),
-  createdAt: text("created_at").notNull(),
+export const categories = mysqlTable("categories", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  type: varchar("type", { length: 10 }).notNull(), // expense | income | both
+  icon: varchar("icon", { length: 50 }).notNull(),
+  sort: int("sort").notNull().default(0),
+  createdAt: varchar("created_at", { length: 24 }).notNull(),
 });
 
-export const transactions = sqliteTable("transactions", {
-  id: text("id").primaryKey(),
-  type: text("type").notNull(), // expense | income
-  amountCents: integer("amount_cents").notNull(),
-  categoryId: text("category_id")
+export const transactions = mysqlTable("transactions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  type: varchar("type", { length: 10 }).notNull(), // expense | income
+  amountCents: int("amount_cents").notNull(),
+  categoryId: varchar("category_id", { length: 36 })
     .notNull()
     .references(() => categories.id),
-  date: text("date").notNull(), // YYYY-MM-DD
-  note: text("note").notNull().default(""),
-  createdAt: text("created_at").notNull(),
-  updatedAt: text("updated_at").notNull(),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  note: varchar("note", { length: 500 }).notNull().default(""),
+  createdAt: varchar("created_at", { length: 24 }).notNull(),
+  updatedAt: varchar("updated_at", { length: 24 }).notNull(),
 });
 
-export const budgets = sqliteTable("budgets", {
-  id: text("id").primaryKey(),
-  yearMonth: text("year_month").notNull().unique(),
-  totalCents: integer("total_cents"),
-  byCategory: text("by_category").notNull().default("{}"), // JSON { categoryId: cents }
-  updatedAt: text("updated_at").notNull(),
+export const budgets = mysqlTable("budgets", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  yearMonth: varchar("year_month", { length: 7 }).notNull().unique(),
+  totalCents: int("total_cents"),
+  byCategory: json("by_category").notNull().default("{}"), // { categoryId: cents }
+  updatedAt: varchar("updated_at", { length: 24 }).notNull(),
 });
 
-export const meta = sqliteTable("meta", {
-  key: text("key").primaryKey(),
-  value: text("value").notNull(),
+export const meta = mysqlTable("meta", {
+  key: varchar("key", { length: 100 }).primaryKey(),
+  value: varchar("value", { length: 500 }).notNull(),
 });

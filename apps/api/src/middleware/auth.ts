@@ -19,7 +19,7 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
       return c.json({ error: "未登录" }, 401);
     }
 
-    const row = await db
+    const rows = await db
       .select({
         userId: sessions.userId,
         username: users.username,
@@ -28,8 +28,9 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
       .from(sessions)
       .innerJoin(users, eq(sessions.userId, users.id))
       .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, nowIso())))
-      .get();
+      .limit(1);
 
+    const row = rows[0];
     if (!row) {
       return c.json({ error: "登录已失效" }, 401);
     }

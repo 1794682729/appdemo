@@ -12,7 +12,7 @@ export const statsRoute = new Hono<{ Variables: AuthVariables }>()
     const parsed = yearMonthSchema.safeParse(yearMonth);
     if (!parsed.success) return c.json({ error: "月份格式应为 YYYY-MM" }, 400);
 
-    const rows = await db.select({ type: transactions.type, amountCents: transactions.amountCents }).from(transactions).where(like(transactions.date, `${parsed.data}-%`)).all();
+    const rows = await db.select({ type: transactions.type, amountCents: transactions.amountCents }).from(transactions).where(like(transactions.date, `${parsed.data}-%`));
     let totalExpense = 0, totalIncome = 0;
     for (const r of rows) {
       if (r.type === "expense") totalExpense += r.amountCents;
@@ -26,10 +26,10 @@ export const statsRoute = new Hono<{ Variables: AuthVariables }>()
     if (!parsed.success) return c.json({ error: "月份格式应为 YYYY-MM" }, 400);
 
     const catMap = new Map<string, { name: string; icon: string; total: number }>();
-    const cats = await db.select().from(categories).all();
+    const cats = await db.select().from(categories);
     for (const cat of cats) catMap.set(cat.id, { name: cat.name, icon: cat.icon, total: 0 });
 
-    const rows = await db.select({ categoryId: transactions.categoryId, amountCents: transactions.amountCents }).from(transactions).where(and(like(transactions.date, `${parsed.data}-%`), eq(transactions.type, "expense"))).all();
+    const rows = await db.select({ categoryId: transactions.categoryId, amountCents: transactions.amountCents }).from(transactions).where(and(like(transactions.date, `${parsed.data}-%`), eq(transactions.type, "expense")));
     for (const r of rows) { const entry = catMap.get(r.categoryId); if (entry) entry.total += r.amountCents; }
 
     const result = Array.from(catMap.entries()).filter(([, v]) => v.total > 0).map(([categoryId, v]) => ({ categoryId, categoryName: v.name, categoryIcon: v.icon, totalCents: v.total })).sort((a, b) => b.totalCents - a.totalCents);
@@ -41,7 +41,7 @@ export const statsRoute = new Hono<{ Variables: AuthVariables }>()
     const result = [];
     for (const ym of list) {
       let expense = 0, income = 0;
-      const rows = await db.select({ type: transactions.type, amountCents: transactions.amountCents }).from(transactions).where(like(transactions.date, `${ym}-%`)).all();
+      const rows = await db.select({ type: transactions.type, amountCents: transactions.amountCents }).from(transactions).where(like(transactions.date, `${ym}-%`));
       for (const r of rows) {
         if (r.type === "expense") expense += r.amountCents;
         else income += r.amountCents;
