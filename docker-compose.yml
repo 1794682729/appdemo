@@ -1,4 +1,18 @@
 services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-liushui123}
+      MYSQL_DATABASE: liushui
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -9,9 +23,17 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-liushui123}
+      - MYSQL_DATABASE=liushui
       - DATABASE_PATH=/app/data/liushui.db
       - SESSION_SECRET=${SESSION_SECRET:-change-me-in-production}
       - ALLOWED_ORIGIN=${ALLOWED_ORIGIN:-https://your.domain.com}
+    depends_on:
+      mysql:
+        condition: service_healthy
     healthcheck:
       test: wget -qO- http://localhost:3001/api/health || exit 1
       interval: 30s
@@ -30,3 +52,4 @@ services:
 
 volumes:
   api_data:
+  mysql_data:
