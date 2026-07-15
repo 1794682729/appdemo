@@ -27,6 +27,7 @@ COPY --from=api-builder /app/node_modules ./node_modules
 COPY --from=api-builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=api-builder /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=api-builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=api-builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=api-builder /app/apps/api/dist ./apps/api/dist
 COPY --from=api-builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=api-builder /app/package.json ./package.json
