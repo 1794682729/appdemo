@@ -13,11 +13,26 @@ export function OcrUploader({ onParsed }: Props) {
   const [preview, setPreview] = useState<AiParseResult | null>(null);
   const [rawText, setRawText] = useState("");
   const [error, setError] = useState("");
+  const [manualText, setManualText] = useState("");
+  const [showRawText, setShowRawText] = useState(false);
+  const [editingText, setEditingText] = useState("");
+
+  const doAiParse = async (text: string) => {
+    setStep("parsing");
+    try {
+      const aiResult = await aiApi.parse(text);
+      setPreview(aiResult);
+      setStep("done");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "AI 解析失败，请重试");
+      setStep("error");
+    }
+  };
 
   const handleFile = async (file: File) => {
-    // Show preview
     setStep("uploading");
     setError("");
+    setManualText("");
 
     try {
       // Step 1: OCR
@@ -26,16 +41,13 @@ export function OcrUploader({ onParsed }: Props) {
       setRawText(ocrResult.rawText);
 
       if (!ocrResult.rawText) {
-        setError("未能识别图片中的文字，请确认图片清晰度");
+        setError("未能识别图片中的文字，请确认图片清晰度，或手动输入支付文字");
         setStep("error");
         return;
       }
 
       // Step 2: AI Parse
-      setStep("parsing");
-      const aiResult = await aiApi.parse(ocrResult.rawText);
-      setPreview(aiResult);
-      setStep("done");
+      await doAiParse(ocrResult.rawText);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "识别失败，请重试");
       setStep("error");
@@ -50,6 +62,9 @@ export function OcrUploader({ onParsed }: Props) {
       setPreview(null);
       setRawText("");
       setError("");
+      setManualText("");
+      setShowRawText(false);
+      setEditingText("");
     }
   };
 
@@ -58,7 +73,22 @@ export function OcrUploader({ onParsed }: Props) {
     setPreview(null);
     setRawText("");
     setError("");
+    setManualText("");
+    setShowRawText(false);
+    setEditingText("");
     if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const handleManualParse = () => {
+    if (!manualText.trim()) return;
+    setRawText(manualText.trim());
+    doAiParse(manualText.trim());
+  };
+
+  const handleRetryWithEditedText = () => {
+    if (!editingText.trim()) return;
+    setRawText(editingText.trim());
+    doAiParse(editingText.trim());
   };
 
   return (
@@ -102,6 +132,27 @@ export function OcrUploader({ onParsed }: Props) {
       {step === "error" && (
         <div className="glass-card rounded-2xl p-5 space-y-3">
           <p className="text-[15px] text-ios-danger text-center">{error}</p>
+
+          {/* Manual text input fallback */}
+          <div className="space-y-2">
+            <p className="text-[12px] text-ios-tertiary">手动粘贴支付通知文字，直接 AI 解析：</p>
+            <textarea
+              value={manualText}
+              onChange={(e) => setManualText(e.target.value)}
+              placeholder="粘贴微信/支付宝的支付通知文字..."
+              className="w-full glass-card rounded-xl px-4 py-3 text-[14px] outline-none min-h-[80px] resize-y"
+            />
+            {manualText.trim() && (
+              <button
+                type="button"
+                onClick={handleManualParse}
+                className="w-full rounded-full bg-ios-accent py-2 text-[15px] font-semibold text-white active:scale-[0.98] transition"
+              >
+                AI 解析这段文字
+              </button>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={handleReset}
@@ -141,7 +192,63 @@ export function OcrUploader({ onParsed }: Props) {
               </div>
             )}
           </div>
-          <p className="text-[12px] text-ios-tertiary truncate">原文: {rawText}</p>
+
+          {/* OCR raw text — expandable */}
+          <div className="border-t border-[rgba(60,60,67,0.08)] pt-2">
+            <button
+              type="button"
+              onClick={() => setShowRawText(!showRawText)}
+              className="flex items-center gap-1 text-[12px] text-ios-tertiary"
+            >
+              <span>{showRawText ? "▾" : "▸"}</span>
+              OCR 识别原文
+              <span className="text-ios-tertiary/60">（可能存在识别错误）</span>
+            </button>
+            {showRawText && (
+              <div className="mt-2 space-y-2">
+                {editingText ? (
+                  <textarea
+                    value={editingText}
+                    onChange={(e) => setEditingText(e.target.value)}
+                    className="w-full rounded-xl bg-[rgba(118,118,128,0.08)] px-3 py-2 text-[13px] text-ios-text outline-none min-h-[60px] resize-y"
+                  />
+                ) : (
+                  <p className="rounded-xl bg-[rgba(118,118,128,0.08)] px-3 py-2 text-[13px] text-ios-secondary leading-relaxed whitespace-pre-wrap break-all">
+                    {rawText}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  {editingText ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleRetryWithEditedText}
+                        className="flex-1 rounded-full bg-ios-accent py-1.5 text-[12px] font-medium text-white"
+                      >
+                        用修改后的文字重新解析
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingText("")}
+                        className="rounded-full border border-[rgba(60,60,67,0.12)] px-3 py-1.5 text-[12px] text-ios-secondary"
+                      >
+                        取消
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditingText(rawText)}
+                      className="rounded-full border border-[rgba(60,60,67,0.12)] px-3 py-1.5 text-[12px] text-ios-secondary"
+                    >
+                      编辑文字
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <button
               type="button"

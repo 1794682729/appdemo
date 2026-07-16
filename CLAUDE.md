@@ -92,7 +92,7 @@ src/
     ocr.ts                 # POST /api/ocr/parse — Tesseract.js 中文 OCR，识别支付截图文字
     ai.ts                  # POST /api/ai/parse — DeepSeek AI 解析文字为结构化记账数据
     admin.ts               # GET /api/admin/users, DELETE /api/admin/users/:id（需 admin 角色）
-    webhook.ts             # API Token 管理 + Bearer 鉴权流水创建 + AI 快速记账 + iOS 快捷指令下载
+    webhook.ts             # API Token 管理 + Bearer 鉴权流水创建 + AI 快速记账 + iOS 快捷指令创建指南（HTML 页面）
 ```
 
 默认端口 `3001`。开发期 web 的 Vite 把 `/api` 代理到 `localhost:3001`。
@@ -241,9 +241,9 @@ src/
 - 下次相同商户自动匹配分类，无需手动选择
 
 ### iOS 快捷指令（Back Tap）
-- 设置页生成 API Token → 下载 `.shortcut` 文件 → 导入 iOS 快捷指令
-- 绑定「轻点背面」→ 复制支付文字 → 双击背面 → 自动 AI 解析并记账
-- 端点：`POST /api/webhook/quick`（Bearer 鉴权，接收剪贴板文字）
+- 设置页 → 快捷指令指南 → 手动创建「打开 URL」快捷指令（目标为应用 URL）→ 绑定「轻点背面」
+- 双击背面即可快速打开记账 App（`GET /webhook/shortcut` 返回 HTML 创建指南，无需下载文件）
+- 高级用法：`POST /api/webhook/quick`（Bearer 鉴权，接收剪贴板文字 → AI 解析 → 自动记账），可搭配自定义快捷指令实现 Back Tap 直接记账
 
 ## 部署
 
@@ -279,4 +279,5 @@ docker-compose.yml  # mysql + api + web 三服务，mysql_data + api_data volume
 - 启动前必须先 `pnpm build:shared`，api 和 web 都依赖 shared 的 `dist/` 输出。
 - `env.ts` 必须在 api 入口第一个 import（加载根目录 `.env`）。
 - OCR 的 Tesseract.js worker 是单例，通过 `@tesseract.js-data/chi_sim` 本地 traineddata 避免 CDN 请求。
+- `docker-compose.yml` 中 api 服务有一个 `DATABASE_PATH` 环境变量，是历史遗留（曾用 SQLite），当前只用 MySQL，可忽略。
 - 不自动 `git commit` / `git push`，除非用户明确要求。
