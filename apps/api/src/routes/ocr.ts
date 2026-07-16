@@ -51,9 +51,30 @@ export const ocrRoute = new Hono<{ Variables: AuthVariables }>()
       // NOTE: setParameters mutates the shared singleton worker. Fine as long as all OCR requests
       // are Chinese payment screenshots. If you add other OCR use cases, set PSM per-call instead.
       await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
-      const { data } = await worker.recognize(Buffer.from(buffer));
-      const rawText = data.text.trim();
-      if (!rawText) {
+      // Pass 1: full text recognition
+      const { data: fullData } = await worker.recognize(Buffer.from(buffer));
+      const fullText = fullData.text.trim();
+
+      // Pass 2: digit-only recognition (whitelist) — much more accurate for amounts
+      await worker.setParameters({
+        tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+        tessedit_char_whitelist: "0123456789.¥￥, ",
+      });
+      const { data: numData } = await worker.recognize(Buffer.from(buffer));
+      const numText = numData.text.trim();
+
+      // Restore full charset so subsequent requests aren't affected
+      await worker.setParameters({
+        tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+        tessedit_char_whitelist: "",
+      });
+
+      // Combine: full text first, then digit-only excerpt for AI to cross-reference
+      const rawText = numText
+        ? `${fullText}\n[金额数字] ${numText}`
+        : fullText;
+
+      if (!fullText && !numText) {
         return c.json({ error: "未能识别图片中的文字，请确认图片清晰度", rawText: "" }, 422);
       }
       return c.json({ rawText });
