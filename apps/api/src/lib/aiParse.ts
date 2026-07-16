@@ -116,11 +116,13 @@ export async function parseImageWithVision(imageBase64: string, mimeType: string
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`DeepSeek Vision API error ${res.status}: ${errText}`);
+    console.error("[vision api] status:", res.status, "body:", errText.slice(0, 500));
+    throw new Error(`DeepSeek Vision API error ${res.status}: ${errText.slice(0, 200)}`);
   }
 
   const data = await res.json() as { choices: Array<{ message: { content: string } }> };
   const content = data.choices?.[0]?.message?.content?.trim() ?? "";
+  console.log("[vision api] response:", content.slice(0, 300));
 
   const jsonStr = extractJsonFromResponse(content);
   const parsed = JSON.parse(jsonStr) as {
