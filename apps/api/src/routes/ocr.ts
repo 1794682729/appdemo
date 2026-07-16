@@ -3,6 +3,7 @@ import { createWorker, PSM, type Worker } from "tesseract.js";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { requireAuth, type AuthVariables } from "../middleware/auth.js";
+import { parseImageWithVision } from "../lib/aiParse.js";
 
 // Resolve local traineddata path from npm-installed package, avoiding blocked CDN
 const require = createRequire(import.meta.url);
@@ -81,5 +82,35 @@ export const ocrRoute = new Hono<{ Variables: AuthVariables }>()
     } catch (err) {
       console.error("[ocr error]", err);
       return c.json({ error: "图片识别失败，请稍后重试", rawText: "" }, 500);
+    }
+  })
+  .post("/ocr/vision", requireAuth, async (c) => {
+    const apiKey = process.env.DEEPSEEK_API_KEY ?? "";
+    if (!apiKey) {
+      return c.json({ error: "AI 服务未配置" }, 503);
+    }
+
+    const body = await c.req.parseBody();
+    const file = body.image as File | undefined;
+    if (!file) return c.json({ error: "请上传图片" }, 400);
+
+    const validTypes = ["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif"];
+    if (!validTypes.includes(file.type)) {
+      return c.json({ error: "不支持的图片格式，请上传 PNG/JPG/WebP" }, 400);
+    }
+
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      return c.json({ error: "图片过大，请上传 10MB 以内的图片" }, 400);
+    }
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString("base64");
+      const result = await parseImageWithVision(base64, file.type, apiKey);
+      return c.json(result);
+    } catch (err) {
+      console.error("[ocr vision error]", err);
+      return c.json({ error: "AI 识图失败，请稍后重试" }, 500);
     }
   });

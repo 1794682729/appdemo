@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { ocrApi, aiApi, type AiParseResult, ApiError } from "../lib/api";
+import { ocrApi, aiApi, visionApi, type AiParseResult, ApiError } from "../lib/api";
 
 type Props = {
   onParsed: (result: AiParseResult) => void;
@@ -34,8 +34,21 @@ export function OcrUploader({ onParsed }: Props) {
     setError("");
     setManualText("");
 
+    // Try vision model first (direct image → AI, no OCR)
     try {
-      // Step 1: OCR
+      setStep("parsing");
+      const visionResult = await visionApi.parse(file);
+      // visionResult lacks categoryId/suggestedCategoryId — client-side matching will handle it
+      setPreview({ ...visionResult, categoryId: null, suggestedCategoryId: null });
+      setRawText("");
+      setStep("done");
+      return;
+    } catch {
+      // Vision failed — fall through to OCR + AI
+    }
+
+    try {
+      // Fallback: OCR → AI parse
       setStep("ocr");
       const ocrResult = await ocrApi.parse(file);
       setRawText(ocrResult.rawText);

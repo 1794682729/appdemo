@@ -213,6 +213,25 @@ export const ocrApi = {
   },
 };
 
+// Vision — DeepSeek vision model directly reads payment screenshot
+export const visionApi = {
+  parse: async (imageFile: File): Promise<AiParseResult> => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+    const res = await fetch("/api/ocr/vision", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    if (!res.ok) {
+      let message = res.statusText;
+      try { const err = await res.json(); message = err.error ?? message; } catch { /* ignore */ }
+      throw new ApiError(message, res.status);
+    }
+    return res.json();
+  },
+};
+
 // AI
 export type AiParseResult = {
   type: "expense" | "income";
