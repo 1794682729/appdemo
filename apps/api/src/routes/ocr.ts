@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { createWorker, PSM, type Worker } from "tesseract.js";
 import { createRequire } from "node:module";
 import path from "node:path";
+import sharp from "sharp";
 import { requireAuth, type AuthVariables } from "../middleware/auth.js";
 import { parseImageWithVision } from "../lib/aiParse.js";
 
@@ -29,6 +30,15 @@ async function getWorker(): Promise<Worker> {
   }
 }
 
+/** Preprocess image for better OCR: grayscale → contrast → sharpen */
+async function preprocessImage(buffer: ArrayBuffer): Promise<Buffer> {
+  return sharp(Buffer.from(buffer))
+    .grayscale()
+    .normalize()
+    .sharpen({ sigma: 1.5 })
+    .toBuffer();
+}
+
 export const ocrRoute = new Hono<{ Variables: AuthVariables }>()
   .post("/ocr/parse", requireAuth, async (c) => {
     const body = await c.req.parseBody();
@@ -47,13 +57,14 @@ export const ocrRoute = new Hono<{ Variables: AuthVariables }>()
 
     try {
       const buffer = await file.arrayBuffer();
+      const processed = await preprocessImage(buffer);
       const worker = await getWorker();
       // PSM 11 = sparse text — captures both large bold amounts and small details in payment screenshots.
       // NOTE: setParameters mutates the shared singleton worker. Fine as long as all OCR requests
       // are Chinese payment screenshots. If you add other OCR use cases, set PSM per-call instead.
       await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
       // Pass 1: full text recognition
-      const { data: fullData } = await worker.recognize(Buffer.from(buffer));
+      const { data: fullData } = await worker.recognize(processed);
       const fullText = fullData.text.trim();
 
       // Pass 2: digit-only recognition (whitelist) — much more accurate for amounts
@@ -61,7 +72,7 @@ export const ocrRoute = new Hono<{ Variables: AuthVariables }>()
         tessedit_pageseg_mode: PSM.SPARSE_TEXT,
         tessedit_char_whitelist: "0123456789.¥￥, ",
       });
-      const { data: numData } = await worker.recognize(Buffer.from(buffer));
+      const { data: numData } = await worker.recognize(processed);
       const numText = numData.text.trim();
 
       // Restore full charset so subsequent requests aren't affected
@@ -85,9 +96,9 @@ export const ocrRoute = new Hono<{ Variables: AuthVariables }>()
     }
   })
   .post("/ocr/vision", requireAuth, async (c) => {
-    const apiKey = process.env.DEEPSEEK_API_KEY ?? "";
+    const apiKey = process.env.DASHSCOPE_API_KEY ?? "";
     if (!apiKey) {
-      return c.json({ error: "AI 服务未配置" }, 503);
+      return c.json({ error: "千问视觉服务未配置，请设置 DASHSCOPE_API_KEY" }, 503);
     }
 
     const body = await c.req.parseBody();

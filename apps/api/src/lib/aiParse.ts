@@ -86,20 +86,18 @@ function normalizeParsed(parsed: { type?: string; amountYuan?: number; categoryN
   };
 }
 
+const QWEN_VL_API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
+
 export async function parseImageWithVision(imageBase64: string, mimeType: string, apiKey: string): Promise<AiParsed> {
-  const res = await fetch(DEEPSEEK_API_URL, {
+  const res = await fetch(QWEN_VL_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "deepseek-chat",
+      model: "qwen-vl-max-latest",
       messages: [
-        {
-          role: "system",
-          content: "你是一个记账助手。从支付截图中提取信息，返回纯JSON。",
-        },
         {
           role: "user",
           content: [

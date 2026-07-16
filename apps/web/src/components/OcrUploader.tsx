@@ -16,7 +16,6 @@ export function OcrUploader({ onParsed }: Props) {
   const [manualText, setManualText] = useState("");
   const [showRawText, setShowRawText] = useState(false);
   const [editingText, setEditingText] = useState("");
-  const [usedVision, setUsedVision] = useState(false);
 
   const doAiParse = async (text: string) => {
     setStep("parsing");
@@ -35,19 +34,16 @@ export function OcrUploader({ onParsed }: Props) {
     setError("");
     setManualText("");
 
-    // Try vision model first (direct image → AI, no OCR)
+    // Try Qwen-VL vision first (direct image → AI, no OCR)
     try {
       setStep("parsing");
       const visionResult = await visionApi.parse(file);
-      // visionResult lacks categoryId/suggestedCategoryId — client-side matching will handle it
       setPreview({ ...visionResult, categoryId: null, suggestedCategoryId: null });
       setRawText("");
-      setUsedVision(true);
       setStep("done");
       return;
     } catch {
       // Vision failed — fall through to OCR + AI
-      setUsedVision(false);
     }
 
     try {
@@ -183,14 +179,9 @@ export function OcrUploader({ onParsed }: Props) {
       {step === "done" && preview && (
         <div className="glass-card rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[18px] font-bold text-ios-text">
-                ¥{preview.amountYuan.toFixed(2)}
-              </span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${usedVision ? "bg-[rgba(52,199,89,0.15)] text-[#34C759]" : "bg-[rgba(142,142,147,0.15)] text-ios-tertiary"}`}>
-                {usedVision ? "AI视觉" : "OCR"}
-              </span>
-            </div>
+            <span className="text-[18px] font-bold text-ios-text">
+              ¥{preview.amountYuan.toFixed(2)}
+            </span>
             <span className={`text-[15px] font-medium ${preview.type === "expense" ? "text-ios-danger" : "text-ios-income"}`}>
               {preview.type === "expense" ? "支出" : "收入"}
             </span>
