@@ -96,7 +96,7 @@ export async function parseImageWithVision(imageBase64: string, mimeType: string
       "Authorization": `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "qwen-vl-max-latest",
+      model: "qwen-vl-plus",
       messages: [
         {
           role: "user",
